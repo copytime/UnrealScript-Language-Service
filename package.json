@@ -211,6 +211,12 @@
                         "uc",
                         "uci"
                     ]
+                },
+                "unrealscript.ignoreUCObjectLiteralAnalyzerClassNames":{
+                    "scope": "resource",
+                    "type":"array",
+                    "description": "忽略分析的字面量类型名",
+                    "default":[]
                 }
             }
         },

@@ -1672,6 +1672,11 @@ export class DocumentAnalyzer extends DefaultSymbolWalker<void> {
                 return;
             }
 
+            if (config.ignoreUCObjectLiteralAnalyzerClassNames?.includes(classSymbol.id.name.text)) {
+                // ignored
+                return;
+            }
+
             expr.classRef.accept(this);
             const objectSymbol = expr.classRef.baseType?.getRef();
             if (config.checkTypes && objectSymbol) {

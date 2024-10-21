@@ -13,4 +13,5 @@ export type UCLanguageServerSettings = UCLanguageSettings & {
     indexDocumentDebouncePeriod: number;
     analyzeDocuments?: EAnalyzeOption;
     analyzeDocumentDebouncePeriod: number;
+    ignoreUCObjectLiteralAnalyzerClassNames?: string[];
 }
