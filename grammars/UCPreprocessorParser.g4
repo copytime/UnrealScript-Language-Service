@@ -32,7 +32,10 @@ options {
 	}
 }
 
-macroProgram: macroStatement* EOF;
+macroProgram returns[extraTokens?:Token[][]]
+	: macroStatement*
+	EOF
+	;
 macroStatement: MACRO_CHAR macro;
 
 callArguments: OPEN_PARENS (MACRO_SYMBOL (',' MACRO_SYMBOL)*)? CLOSE_PARENS;
@@ -97,7 +100,7 @@ macro returns[isActive: boolean, evaluatedTokens?: Token[]]
 		$isActive = this.peekCurrentState();
 		this.currentState.pop();
 	} #macroEndIf
-	| MACRO_INCLUDE OPEN_PARENS path=MACRO_TEXT CLOSE_PARENS
+	| MACRO_INCLUDE OPEN_PARENS path=MACRO_INCLUDE_PATH CLOSE_PARENS
 	{
 		$isActive = this.getCurrentState();
 	} #macroInclude

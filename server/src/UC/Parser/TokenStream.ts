@@ -1,15 +1,19 @@
 import { ANTLRErrorListener, CommonTokenStream, Token, WritableToken } from 'antlr4ts';
 
 import { UCLexer } from '../antlr/generated/UCLexer';
-import { MacroCallContext, MacroProgramContext } from '../antlr/generated/UCPreprocessorParser';
+import { MacroCallContext, MacroIncludeContext, MacroProgramContext } from '../antlr/generated/UCPreprocessorParser';
 import { UCInputStream } from './InputStream';
+import { URI } from 'vscode-uri';
+import { UCDocument } from 'UC/document';
+import path from 'path';
+import { existsSync, readFileSync } from 'fs';
 
-const DEFAULT_INPUT = UCInputStream.fromString(''); 
+const DEFAULT_INPUT = UCInputStream.fromString('');
 
 export class UCTokenStream extends CommonTokenStream {
     readonly evaluatedTokens = new Map<number, WritableToken[]>();
 
-    initMacroTree(macroTree: MacroProgramContext, errListener?: ANTLRErrorListener<number>) {
+    initMacroTree(document: UCDocument, macroTree: MacroProgramContext, errListener?: ANTLRErrorListener<number>) {
         const smNodes = macroTree.macroStatement();
         if (smNodes) {
             const rawLexer = new UCLexer(DEFAULT_INPUT);
@@ -40,6 +44,33 @@ export class UCTokenStream extends CommonTokenStream {
                         const token = smNode.MACRO_CHAR();
                         this.evaluatedTokens.set(token.symbol.startIndex, tokens as WritableToken[]);
                     }
+                }
+                if (macroCtx.isActive && macroCtx instanceof MacroIncludeContext) {
+                    let tokens = macroCtx.evaluatedTokens;
+                    if (!tokens) {
+                        if (macroCtx._path && macroCtx._path.text) {
+                            const filePath = macroCtx._path.text;
+                            const docFilePath = URI.parse(document.uri).fsPath;
+
+                            const docFileDir = path.dirname(docFilePath);
+                            const inculdeFilePath = path.join(docFileDir, filePath)
+                            if (existsSync(inculdeFilePath)) {
+                                const codeStr = readFileSync(inculdeFilePath, { encoding: "utf8" })
+                                const rawText = codeStr.replace('\\', '');
+                                const inputStream = UCInputStream.fromString(rawText);
+
+                                rawLexer.inputStream = inputStream;
+                                tokens = rawLexer.getAllTokens();
+                                macroCtx.evaluatedTokens = tokens;
+                            }
+                        }
+                    }
+
+                    if (tokens) {
+                        const token = smNode.MACRO_CHAR();
+                        this.evaluatedTokens.set(token.symbol.startIndex, tokens as WritableToken[]);
+                    }
+
                 }
             }
         }
@@ -89,7 +120,7 @@ export class UCTokenStream extends CommonTokenStream {
         let i = token.tokenIndex;
         for (; --i >= 0;) {
             token = this.get(i);
-            // Stop at the first /* */ comment 
+            // Stop at the first /* */ comment
             // only if we are not actively looking for preceding // comments
             // note that a block comment may span several lines!
             if (token.type === UCLexer.BLOCK_COMMENT

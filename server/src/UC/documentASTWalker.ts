@@ -2033,6 +2033,12 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
         return expression;
     }
 
+    visitMacroInclude(ctx: UCMacro.MacroIncludeContext){
+        if (ctx._path) {
+            console.log(`include file path:${ctx._path}`);
+        }
+    }
+
     protected defaultResult(): undefined {
         return undefined;
     }

@@ -10,6 +10,7 @@ channels { MACRO, COMMENTS_CHANNEL }
 	parensLevel: number = 0;
 	braceLevel: number = 0;
 	isDefineContext: boolean = false;
+	isIncludeContext: boolean = false;
 }
 
 fragment DIGIT
@@ -339,7 +340,12 @@ MACRO_DEFINE
 	;
 
 MACRO_UNDEFINE:             'undefine'                  -> channel(MACRO);
-MACRO_INCLUDE:				'include'					-> channel(MACRO);
+MACRO_INCLUDE:
+	'include'
+	{
+		this.isIncludeContext = true;
+	}
+	-> channel(MACRO);
 MACRO_IS_DEFINED:			'isdefined'                 -> channel(MACRO);
 MACRO_NOT_DEFINED:			'notdefined'                -> channel(MACRO);
 MACRO_COUNTER:				'counter'                   -> channel(MACRO);
@@ -357,6 +363,9 @@ MACRO_OPEN_PARENS
 	: '('
 	{
 		++ this.parensLevel;
+		if(this.isIncludeContext){
+			this.pushMode(UCLexer.MACRO_INCLUDE_MODE);
+		}
 	}
 	-> channel(MACRO), type(OPEN_PARENS)
 	;
@@ -413,6 +422,16 @@ MACRO_NEW_LINE
 	;
 
 // MACRO_ERROR: . -> channel(HIDDEN);
+
+mode MACRO_INCLUDE_MODE;
+
+MACRO_INCLUDE_PATH
+	: ~(')'|'\r'|'\n'|'\t')*
+	{
+		this.isIncludeContext = false;
+	}
+	-> channel(MACRO), popMode
+	;
 
 mode MACRO_TEXT_MODE;
 

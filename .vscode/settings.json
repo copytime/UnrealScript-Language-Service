@@ -40,5 +40,8 @@
     },
     "yaml.schemas": {
         "https://json.schemastore.org/tmlanguage.json": "*.YAML-tmLanguage"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
     }
 }

@@ -130,7 +130,7 @@ export class UCDocument {
                 try {
                     const macroTree = preprocessDocument(this, macroParser);
                     if (macroTree) {
-                        tokens.initMacroTree(macroTree);
+                        tokens.initMacroTree(this,macroTree);
                     }
                 } catch (err) {
                     console.error(err);
@@ -192,7 +192,7 @@ export class UCDocument {
                 try {
                     const macroTree = preprocessDocument(this, macroParser, walker);
                     if (macroTree) {
-                        tokenStream.initMacroTree(macroTree, errorListener);
+                        tokenStream.initMacroTree(this,macroTree, errorListener);
                     }
                 } catch (err) {
                     console.error(err);
