@@ -7,6 +7,7 @@ import { URI } from 'vscode-uri';
 import { UCDocument } from 'UC/document';
 import path from 'path';
 import { existsSync, readFileSync } from 'fs';
+import { readTextByPath } from 'workspace';
 
 const DEFAULT_INPUT = UCInputStream.fromString('');
 
@@ -55,7 +56,7 @@ export class UCTokenStream extends CommonTokenStream {
                             const docFileDir = path.dirname(docFilePath);
                             const inculdeFilePath = path.join(docFileDir, filePath)
                             if (existsSync(inculdeFilePath)) {
-                                const codeStr = readFileSync(inculdeFilePath, { encoding: "utf8" })
+                                const codeStr = readTextByPath(inculdeFilePath);
                                 const rawText = codeStr.replace('\\', '');
                                 const inputStream = UCInputStream.fromString(rawText);
 

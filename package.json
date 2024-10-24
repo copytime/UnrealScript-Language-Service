@@ -46,6 +46,8 @@
     "dependencies": {
         "antlr4ts": "0.5.0-alpha.4",
         "crc-32": "file:packages/crc-32",
+        "iconv-lite": "^0.6.3",
+        "jschardet": "^3.1.4",
         "syntaxes": "file:syntaxes"
     },
     "devDependencies": {
@@ -212,11 +214,11 @@
                         "uci"
                     ]
                 },
-                "unrealscript.ignoreUCObjectLiteralAnalyzerClassNames":{
+                "unrealscript.ignoreUCObjectLiteralAnalyzerClassNames": {
                     "scope": "resource",
-                    "type":"array",
+                    "type": "array",
                     "description": "忽略分析的字面量类型名",
-                    "default":[]
+                    "default": []
                 }
             }
         },
