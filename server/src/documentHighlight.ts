@@ -1,10 +1,11 @@
-import { DocumentHighlight, DocumentHighlightKind, Position } from 'vscode-languageserver';
+import { DocumentHighlight, DocumentHighlightKind, Position, Range } from 'vscode-languageserver';
 import { DocumentUri } from 'vscode-languageserver-textdocument';
 
 import { UCDocument } from './UC/document';
 import { getDocumentSymbol, resolveSymbolToRef } from './UC/helpers';
 import { getDocumentByURI } from './UC/indexer';
-import { ISymbol, SymbolReference, SymbolReferenceFlags } from './UC/Symbols';
+import { hasModifiers, ISymbol, SymbolReference, SymbolReferenceFlags } from './UC/Symbols';
+import { ModifierFlags } from 'UC/Symbols/ModifierFlags';
 
 export async function getDocumentHighlights(uri: DocumentUri, position: Position): Promise<DocumentHighlight[] | undefined> {
     const document = getDocumentByURI(uri);
@@ -25,6 +26,26 @@ export function getSymbolDocumentHighlights(document: UCDocument, symbol: ISymbo
     const references = document.getReferencesToSymbol(symbol);
     if (!references) {
         return undefined;
+    }
+
+
+    if (hasModifiers(symbol) && ((symbol.modifiers & ModifierFlags.Generated) != 0)) {
+        //Generated symbol
+        return Array
+        .from(references.values())
+        .map(x=>{
+            let res:SymbolReference = {
+                location: {
+                    uri: x.location.uri,
+                    range: Range.create(Position.create(x.location.range.start.line, 0),
+                        Position.create(x.location.range.start.line, 0)
+                    )
+                },
+                flags: x.flags
+            }
+            return res;
+        })
+        .map(toDocumentHighlight);
     }
 
     return Array

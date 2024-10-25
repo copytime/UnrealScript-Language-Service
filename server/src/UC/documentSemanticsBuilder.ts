@@ -233,7 +233,7 @@ export class DocumentSemanticsBuilder extends DefaultSymbolWalker<undefined> {
 
     override visitStructBase(symbol: UCStructSymbol) {
         if (symbol.children) {
-            const symbols: ISymbol[] = Array(symbol.childrenCount());
+            const symbols: UCFieldSymbol[] = Array(symbol.childrenCount());
 
             for (let child: UCFieldSymbol | undefined = symbol.children, i = 0; child; child = child.next, ++i) {
                 symbols[i] = child;
@@ -243,7 +243,10 @@ export class DocumentSemanticsBuilder extends DefaultSymbolWalker<undefined> {
                 if (this.range && !areRangesIntersecting(symbol.range, this.range)) {
                     continue;
                 }
-
+                if ((symbols[i].modifiers & ModifierFlags.Generated) != 0) {
+                    //Generated symbol
+                    continue;
+                }
                 symbols[i].accept(this);
             }
         }

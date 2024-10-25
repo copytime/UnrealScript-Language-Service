@@ -116,6 +116,7 @@ import {
     UCEnumMemberSymbol,
     UCEnumSymbol,
     UCEventSymbol,
+    UCFieldSymbol,
     UCInterfaceSymbol,
     UCLocalSymbol,
     UCMacroSymbol,
@@ -2038,6 +2039,14 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
             console.log(`include file path:${ctx._path}`);
         }
     }
+
+    visitMember(ctx: UCGrammar.MemberContext){
+        const res = this.visitChildren(ctx)
+        if (ctx.isFromInclude && res instanceof UCFieldSymbol) {
+            res.modifiers |= ModifierFlags.Generated;
+        }
+        return res;
+    };
 
     protected defaultResult(): undefined {
         return undefined;

@@ -1,4 +1,4 @@
-import { ANTLRErrorListener, CommonTokenStream, Token, WritableToken } from 'antlr4ts';
+import { ANTLRErrorListener, BufferedTokenStream, CommonToken, CommonTokenStream, Token, WritableToken } from 'antlr4ts';
 
 import { UCLexer } from '../antlr/generated/UCLexer';
 import { MacroCallContext, MacroIncludeContext, MacroProgramContext } from '../antlr/generated/UCPreprocessorParser';
@@ -62,6 +62,17 @@ export class UCTokenStream extends CommonTokenStream {
 
                                 rawLexer.inputStream = inputStream;
                                 tokens = rawLexer.getAllTokens();
+                                tokens.forEach(t=>{
+                                    if (t instanceof CommonToken) {
+                                        t.line = macroCtx.start.line;
+                                        // t.isIncludeToken = true;
+                                        Object.defineProperty(t,"isIncludeToken",{
+                                            value:true,
+                                            writable:true,
+                                        });
+
+                                    }
+                                })
                                 macroCtx.evaluatedTokens = tokens;
                             }
                         }

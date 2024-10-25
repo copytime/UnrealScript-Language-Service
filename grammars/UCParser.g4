@@ -65,6 +65,10 @@ options {
         }
         return false;
     }
+
+	isTokenFromInclude(token: (Token & { isIncludeToken?: boolean })) {
+		return token.isIncludeToken;
+	}
 }
 
 // Class modifier keywords have been commented out, because we are not using them for parsing.
@@ -261,7 +265,7 @@ directive
 
 program: member* | EOF;
 
-member
+member returns[isFromInclude:boolean]
 	: classDecl
     | interfaceDecl
 	| constDecl
@@ -276,6 +280,14 @@ member
 	| directive
 	| SEMICOLON
 	;
+	finally
+	{
+		$isFromInclude = false;
+		const lastToken = this._input.LT(-1);
+		if (lastToken && this.isTokenFromInclude(lastToken)) {
+			$isFromInclude = true;
+		}
+	}
 
 literal
 	: BOOLEAN_LITERAL
