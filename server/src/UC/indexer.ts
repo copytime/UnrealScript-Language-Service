@@ -42,7 +42,10 @@ export const defaultSettings: UCLanguageServerSettings = {
     analyzeDocuments: EAnalyzeOption.OnlyActive,
     analyzeDocumentDebouncePeriod: 50,
     indexAllDocuments: false,
-    indexDocumentDebouncePeriod: 50
+    indexDocumentDebouncePeriod: 50,
+    ignoreUCObjectLiteralAnalyzerClassNames:[],
+    ignoreTypeMatchClassNameMap:new Map(),
+    _ignoreTypeMatchClassNameSets:[]
 };
 
 export const config: UCLanguageServerSettings = Object.assign({}, defaultSettings);

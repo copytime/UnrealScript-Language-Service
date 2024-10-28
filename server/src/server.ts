@@ -678,6 +678,20 @@ function initializeConfiguration() {
     config.indexDocumentDebouncePeriod = Math.max(Math.min(config.indexDocumentDebouncePeriod, 300), 0.0);
     config.analyzeDocumentDebouncePeriod = Math.max(Math.min(config.analyzeDocumentDebouncePeriod, 1000), 0.0);
 
+    // Set up ignore type match class name map
+    if (config._ignoreTypeMatchClassNameSets.length > 0) {
+        config.ignoreTypeMatchClassNameMap = new Map();
+        config._ignoreTypeMatchClassNameSets.forEach(classNameSet=>{
+            const sameTypeSet = new Set<number>();
+            classNameSet.forEach(className=>{
+                const hashName = toName(className);
+                sameTypeSet.add(hashName.hash);
+                config.ignoreTypeMatchClassNameMap?.set(hashName.hash,sameTypeSet);
+            })
+        })
+    }
+
+
     applyConfiguration(config);
 }
 

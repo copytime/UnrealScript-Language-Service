@@ -1,3 +1,4 @@
+import { NameHash } from 'UC/name';
 import { UCLanguageSettings } from './UC/settings';
 
 export enum EAnalyzeOption {
@@ -14,4 +15,6 @@ export type UCLanguageServerSettings = UCLanguageSettings & {
     analyzeDocuments?: EAnalyzeOption;
     analyzeDocumentDebouncePeriod: number;
     ignoreUCObjectLiteralAnalyzerClassNames?: string[];
+    ignoreTypeMatchClassNameMap?:Map<NameHash,Set<NameHash>>;
+    _ignoreTypeMatchClassNameSets:string[][];
 }

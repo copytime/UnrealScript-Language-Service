@@ -997,6 +997,14 @@ export function typesMatch(
         return TypeMatchReport.ArrayDimensionMismatch;
     }
 
+    // ignored type match class name
+    if (areClassNameIgnored(
+        destType.getRef<UCStructSymbol>()!,
+        inputType.getRef<UCStructSymbol>()!
+    )) {
+        return TypeMatchReport.Compatible;
+    }
+
     // TODO: Unit tests for UC1 and UC2.
     if (destType.flags & ModifierFlags.Out && (matchFlags & TypeMatchFlags.SuppressOut) === 0) {
         // 'Const' inputs cannot be matched with a const param.
@@ -1210,6 +1218,33 @@ export function hasDefinedSuper(
 ): symbol is SuperSymbol & { super: UCStructSymbol } {
     return typeof symbol.super !== 'undefined';
 }
+
+
+
+export function areClassNameIgnored(parentSymbol: SuperSymbol, derivedSymbol: SuperSymbol):boolean{
+
+    if (!parentSymbol || !derivedSymbol) {
+        return false;
+    }
+
+    if (!config.ignoreTypeMatchClassNameMap) {
+        return false;
+    }
+
+    const sameTypeSet = config.ignoreTypeMatchClassNameMap.get(parentSymbol.id.name.hash);
+    if (!sameTypeSet) {
+        return false;
+    }
+
+    if(sameTypeSet.has(derivedSymbol.id.name.hash)){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+
+
 
 export function areDescendants(
     parentSymbol: SuperSymbol,
