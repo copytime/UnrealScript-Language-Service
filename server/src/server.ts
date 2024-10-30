@@ -18,6 +18,8 @@ import {
     TextDocumentIdentifier,
     TextDocumentSyncKind,
     WorkspaceFolder,
+    TextEdit,
+    Position
 } from 'vscode-languageserver/node';
 
 import { executeCommand, getCommand, getCommands } from 'commands';
@@ -92,6 +94,7 @@ import { ModifierFlags } from './UC/Symbols/ModifierFlags';
 import { UnrealPackage } from './UPK/UnrealPackage';
 import { getFiles, isDocumentFileName } from './workspace';
 import { getWorkspaceSymbols } from './workspaceSymbol';
+import { getDocumentFormat } from 'documentFormater';
 
 /**
  * Emits true when the workspace is prepared and ready for indexing.
@@ -359,7 +362,8 @@ connection.onInitialize((params: InitializeParams) => {
                     tokenTypes: TokenTypes,
                     tokenModifiers: TokenModifiers
                 },
-            }
+            },
+            documentFormattingProvider:true
         }
     };
 });
@@ -1039,3 +1043,20 @@ connection.onExecuteCommand(async e => {
     //     }
     // }
 });
+
+connection.onDocumentFormatting(async e=>{
+    const work = await connection.window.createWorkDoneProgress();
+    work.begin(
+        'Formating document',
+        0.0,
+        'Formating...',
+        true);
+    let res:TextEdit[];
+    try {
+        res = getDocumentFormat(e.textDocument,e.options);
+    }
+    finally{
+        work.done();
+    }
+    return res ?? [];
+})
