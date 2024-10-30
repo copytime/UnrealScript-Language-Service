@@ -22,8 +22,10 @@ export class LineIndentRule implements IFormatRule {
                 }
 
                 let actualIndentCount = 0;
+                let actualIndent = ""
                 if (currentToken.type == UCParser.WS) {
                     actualIndentCount = this.getIndentCount(ctx, currentToken.text ?? "")
+                    actualIndent = currentToken.text ?? ""
                 }
                 const expectIndent = ctx.indextString.repeat(indentLevel);
                 const expectIndentCount = this.getIndentCount(ctx, expectIndent)
@@ -31,7 +33,7 @@ export class LineIndentRule implements IFormatRule {
                     res.push({
                         line: currentToken.line - 1,
                         position: 0,
-                        length: currentToken.text?.length ?? 0,
+                        length: actualIndent.length,
                         fixedText: expectIndent
                     })
                 }
