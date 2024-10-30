@@ -8,6 +8,7 @@ import { Token } from 'antlr4ts/Token';
 import { UCParser } from 'UC/antlr/generated/UCParser';
 import { BraceNewlineRule } from 'Format/BraceNewlineRule';
 import { LineIndentRule } from 'Format/LineIndentRule';
+import { OperatorSpaceRule } from 'Format/OperatorSpaceRule';
 
 export interface IFormatInfo {
     line: number;
@@ -131,6 +132,7 @@ export function getDocumentFormat(textDoucment: TextDocumentIdentifier, options:
 
 function buildRules(): IFormatRule[] {
     return [
+        new OperatorSpaceRule(),
         new BraceNewlineRule(),
         new LineIndentRule()
     ]
