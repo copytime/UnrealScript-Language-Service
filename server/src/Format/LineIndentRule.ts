@@ -3,7 +3,7 @@ import { FormatContext, IFormatInfo, IFormatRule } from 'documentFormater';
 import { UCParser } from 'UC/antlr/generated/UCParser';
 import { UCMemberExpression } from 'UC/expressions';
 import { intersectsWith } from 'UC/helpers';
-import { UCBlock, UCExpressionStatement, UCForStatement, UCIfStatement } from 'UC/statements';
+import { UCArchetypeBlockStatement, UCBlock, UCExpressionStatement, UCForStatement, UCIfStatement } from 'UC/statements';
 import { isStatement, isSymbol, UCClassSymbol, UCFieldSymbol, UCMethodSymbol, UCPropertySymbol } from 'UC/Symbols';
 import { Position, Range } from 'vscode-languageserver';
 
@@ -120,6 +120,20 @@ export class LineIndentRule implements IFormatRule {
                 }
             }
             return;
+        }
+
+
+        if (ctx.isInDefaultPropertiesScope && content instanceof UCArchetypeBlockStatement) {
+            // add indent for 'begin object' and 'end object'
+            // this block is special
+            // if we find all subcontents in it. 'UCArchetypeSymbol' and 'UCBlock' will be found.
+            // both of them have the same range as 'UCArchetypeBlockStatement'.
+            // 'UCArchetypeSymbol' is fine but 'UCBlock' will add another level of indent,
+            // that will cause an extra indent before 'begin object' and 'end object'
+            // so we just return if current token line == 'UCArchetypeBlockStatement' range start line or end line
+            if (position.line == content.range.start.line || position.line == content.range.end.line) {
+                return;
+            }
         }
 
 
