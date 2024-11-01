@@ -4,7 +4,7 @@ import { UCParser } from 'UC/antlr/generated/UCParser';
 import { UCMemberExpression } from 'UC/expressions';
 import { intersectsWith } from 'UC/helpers';
 import { UCArchetypeBlockStatement, UCBlock, UCExpressionStatement, UCForStatement, UCIfStatement } from 'UC/statements';
-import { isStatement, isSymbol, UCClassSymbol, UCFieldSymbol, UCMethodSymbol, UCPropertySymbol } from 'UC/Symbols';
+import { isMethodSymbol, isScriptStructSymbol, isStatement, isSymbol, UCClassSymbol, UCFieldSymbol, UCMethodSymbol, UCPropertySymbol, UCStructSymbol } from 'UC/Symbols';
 import { Position, Range } from 'vscode-languageserver';
 
 export class LineIndentRule implements IFormatRule {
@@ -187,13 +187,17 @@ export class LineIndentRule implements IFormatRule {
             }
         }
 
-        // add indent for local variable in 'function'
         if (content instanceof UCPropertySymbol) {
-            if (content.outer instanceof UCMethodSymbol) {
+            // add indent for local variable in 'function'
+            if (content.outer instanceof UCMethodSymbol && isMethodSymbol(content.outer)) {
                 // skip function paramter in the same line
                 if (content.range.start.line != content.outer.range.start.line) {
                     ctx.indentLevel++;
                 }
+            }
+            // add indent for properties in 'struct'
+            if (content.outer instanceof UCStructSymbol && isScriptStructSymbol(content.outer)) {
+                ctx.indentLevel++;
             }
         }
 
@@ -228,7 +232,7 @@ export class LineIndentRule implements IFormatRule {
         if (!outerContent) {
             return undefined;
         }
-        while (!(outerContent instanceof UCExpressionStatement)){
+        while (!(outerContent instanceof UCExpressionStatement)) {
             outerContent = outerContent._outerContent;
             if (!outerContent) {
                 return undefined;
@@ -249,7 +253,7 @@ function removeSamelineContent(content: IContent, subContents: (IContent | undef
     // return subContents as any;
     const contentLineSet = new Set<number>();
     // const contentClassSet = new Set<Object>();
-    if(content.range.start.line == content.range.end.line){
+    if (content.range.start.line == content.range.end.line) {
         contentLineSet.add(content.range.start.line);
     }
     // contentClassSet.add(Object.getPrototypeOf(content));
