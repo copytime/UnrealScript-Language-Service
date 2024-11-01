@@ -122,6 +122,7 @@ export class LineIndentRule implements IFormatRule {
             return;
         }
 
+        const outerContent = content._outerContent;
 
         if (ctx.isInDefaultPropertiesScope && content instanceof UCArchetypeBlockStatement) {
             // add indent for 'begin object' and 'end object'
@@ -167,7 +168,6 @@ export class LineIndentRule implements IFormatRule {
         }
 
 
-        const outerContent = content._outerContent;
 
         if (content instanceof UCBlock) {
             ctx.indentLevel++;
