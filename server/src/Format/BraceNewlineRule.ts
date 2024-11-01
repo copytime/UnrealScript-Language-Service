@@ -32,8 +32,10 @@ export class BraceNewlineRule implements IFormatRule {
             if (this.prevToken
                 && this.prevToken.type == UCParser.CLOSE_BRACE
                 && currentToken.type != UCParser.NEWLINE
+                && currentToken.type != UCParser.WS
                 && currentToken.type != UCParser.SEMICOLON
                 && currentToken.type != UCParser.CLOSE_BRACE
+                && currentToken.type != UCParser.KW_UNTIL
             ) {
                 //add new line after '}'
                 addNewline = true;
