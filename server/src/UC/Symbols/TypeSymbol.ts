@@ -1426,7 +1426,13 @@ export function isArchetypeSymbol(symbol: ISymbol): symbol is UCArchetypeSymbol 
 }
 
 export function isStatement(symbol: INode): symbol is IStatement {
-    return symbol.kind === UCNodeKind.Statement;
+    // ITypeSymbol + ISymbol = IStatement ??!!!!   so bad!
+    // And what if the 'kind' property in 'UCTypeSymbol' just happened to be 'UCSymbolKind.Type'?
+    // Which is just as same as 'UCNodeKind.Statement', they are all number '1'!
+
+    // thankfully there is a property named 'flags' only in ITypeSymbol.
+    // use this 'flags' to distinguish between them.
+    return symbol.kind === UCNodeKind.Statement && !((symbol as Object).hasOwnProperty("flags"));
 }
 
 export function isExpression(symbol: INode): symbol is IExpression {

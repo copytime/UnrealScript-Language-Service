@@ -21,13 +21,21 @@ export class BraceNewlineRule implements IFormatRule {
             if (this.prevToken && this.prevToken.type == UCParser.OPEN_BRACE && currentToken.type != UCParser.NEWLINE) {
                 //add new line after '{'
                 addNewline = true;
+                indentLevel += 1;
+
             }
             if (currentToken.type == UCParser.CLOSE_BRACE) {
                 //add new line before '}'
                 addNewline = true;
-                // indentLevel = indentLevel - 1 >= 0 ? indentLevel - 1 : 0;
+                indentLevel = indentLevel - 1 >= 0 ? indentLevel - 1 : 0;
             }
-            if (this.prevToken && this.prevToken.type == UCParser.CLOSE_BRACE && currentToken.type != UCParser.NEWLINE && currentToken.type != UCParser.SEMICOLON) {
+            if (this.prevToken
+                && this.prevToken.type == UCParser.CLOSE_BRACE
+                && currentToken.type != UCParser.NEWLINE
+                && currentToken.type != UCParser.SEMICOLON
+                && currentToken.type != UCParser.CLOSE_BRACE
+            ) {
+                //add new line after '}'
                 addNewline = true;
             }
         }

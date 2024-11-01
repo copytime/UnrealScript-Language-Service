@@ -1,25 +1,33 @@
 import { Token } from 'antlr4ts';
 import { FormatContext, IFormatInfo, IFormatRule } from 'documentFormater';
 import { UCParser } from 'UC/antlr/generated/UCParser';
+import { UCMemberExpression } from 'UC/expressions';
+import { intersectsWith } from 'UC/helpers';
+import { UCBlock, UCExpressionStatement, UCForStatement, UCIfStatement } from 'UC/statements';
+import { isStatement, isSymbol, UCFieldSymbol, UCMethodSymbol, UCPropertySymbol } from 'UC/Symbols';
+import { Position, Range } from 'vscode-languageserver';
 
 export class LineIndentRule implements IFormatRule {
 
 
     prevLine = -1;
+    // indent: number[] = [9999]
 
     Format(ctx: FormatContext, currentToken: Token): IFormatInfo[] {
         const res: IFormatInfo[] = [];
-        let indentLevel = ctx.indentLevel;
 
 
         if (currentToken.line != this.prevLine) {
+
+            const nextToken = ctx.tryGetNextToken(currentToken);
+
             if (currentToken.type != UCParser.LINE_COMMENT  //ignore line comment
                 && currentToken.type != UCParser.BLOCK_COMMENT //ignore block comment
+                && (!nextToken || (nextToken.type != UCParser.LINE_COMMENT && nextToken.type != UCParser.BLOCK_COMMENT))
             ) {
-                //if next token is close brace, then the indent level shold minus one level
-                if (ctx.tryGetNextToken(currentToken)?.type == UCParser.CLOSE_BRACE) {
-                    indentLevel = indentLevel - 1 >= 0 ? indentLevel - 1 : 0;
-                }
+                this.getTokenExpectedIndent(ctx, currentToken);
+
+                // this.indent.push(ctx.indentLevel)
 
                 let actualIndentCount = 0;
                 let actualIndent = ""
@@ -27,7 +35,7 @@ export class LineIndentRule implements IFormatRule {
                     actualIndentCount = this.getIndentCount(ctx, currentToken.text ?? "")
                     actualIndent = currentToken.text ?? ""
                 }
-                const expectIndent = ctx.indextString.repeat(indentLevel);
+                const expectIndent = ctx.indextString.repeat(ctx.indentLevel);
                 const expectIndentCount = this.getIndentCount(ctx, expectIndent)
                 if (actualIndentCount != expectIndentCount) {
                     res.push({
@@ -37,6 +45,10 @@ export class LineIndentRule implements IFormatRule {
                         fixedText: expectIndent
                     })
                 }
+
+
+            } else {
+                // this.indent.push(-9999)
             }
         }
 
@@ -67,4 +79,156 @@ export class LineIndentRule implements IFormatRule {
         }
         return count;
     }
+
+
+    getTokenExpectedIndent(ctx: FormatContext, curToken: Token) {
+        ctx.indentLevel = 0;
+        const curTokenLine = curToken.line - 1;
+        const curTokenCharPositionInLine = curToken.charPositionInLine;
+        const curTokenPosition = Position.create(curTokenLine, curTokenCharPositionInLine);
+        if (!ctx.document.class) {
+            return
+        }
+
+        const docContent = ctx.document.class.children
+        if (!docContent) {
+            return;
+        }
+
+
+
+        this.setCtxIndent(ctx, docContent, curTokenPosition);
+
+    }
+
+    setCtxIndent(ctx: FormatContext, content: IContent | undefined, position: Position) {
+        if (!content) {
+            return;
+        }
+        // Not in the content range, jump to next
+        if (!(position.line >= content.range.start.line && position.line <= content.range.end.line)) {
+            if (content.next) {
+                content.next._outerContent = content;
+                this.setCtxIndent(ctx, content.next, position);
+            }
+            return;
+        }
+
+
+        // Find all value with 'range' property but except 'outer' and 'id'
+        let subContents = Object.entries(content).filter(entry => {
+            return entry[0] != "outer"
+                && entry[0] != "id"
+                && entry[0] != "type"
+                // && entry[0] != "next"    // include 'next' because 'post operator expression' of 'for statement' is in 'next'
+                && entry[0] != "reference"
+                && entry[0] != "_outerContent"
+                && typeof entry[1] == "object"
+                && (entry[1] as Object).hasOwnProperty("range");
+        }).map(entry => entry[1] as IContent)
+
+        subContents = removeSamelineContent(content, subContents);
+
+        for (let index = 0; index < subContents.length; index++) {
+            const subContent = subContents[index];
+            subContent._outerContent = content;
+            this.setCtxIndent(ctx, subContent, position);
+        }
+
+
+        const outerContent = content._outerContent;
+
+        if (content instanceof UCBlock) {
+            ctx.indentLevel++;
+            const statements = removeSamelineContent(content, content.statements)
+            for (let index = 0; index < statements.length; index++) {
+                const statement = statements[index];
+                (statement as IContent)._outerContent = content;
+                this.setCtxIndent(ctx, statement, position);
+            }
+        }
+
+        // add indent for local variable in 'function'
+        if (content instanceof UCPropertySymbol) {
+            if (content.outer instanceof UCMethodSymbol) {
+                // skip function paramter in the same line
+                if (content.range.start.line != content.outer.range.start.line) {
+                    ctx.indentLevel++;
+                }
+            }
+        }
+
+
+        if (!isStatement(content as any)) {
+            const outerStatement: UCExpressionStatement | undefined = this.findOuterStatement(content);
+            // add indent for condition expression in different line 'if'
+            // e.g.
+            // if(aaa
+            //    &&bbb)
+            if (outerStatement instanceof UCIfStatement
+                && content.range.start.line != outerStatement.range.start.line
+            ) {
+                ctx.indentLevel++;
+            }
+            //add indent for different line 'for'
+            // e.g.
+            // for(i=1;
+            //     i<50;
+            //     i++;)
+            if (outerStatement instanceof UCForStatement
+                && content.range.start.line != outerStatement.range.start.line
+            ) {
+                ctx.indentLevel++;
+            }
+        }
+
+
+    }
+
+    findOuterStatement(outerContent: IContent | undefined): UCExpressionStatement | undefined {
+        if (!outerContent) {
+            return undefined;
+        }
+        while (!(outerContent instanceof UCExpressionStatement)){
+            outerContent = outerContent._outerContent;
+            if (!outerContent) {
+                return undefined;
+            }
+        }
+        return outerContent;
+    }
+
+}
+
+interface IContent {
+    range: Range
+    next?: IContent
+    _outerContent?: IContent
+}
+
+function removeSamelineContent(content: IContent, subContents: (IContent | undefined)[]): IContent[] {
+    // return subContents as any;
+    const contentLineSet = new Set<number>();
+    // const contentClassSet = new Set<Object>();
+    if(content.range.start.line == content.range.end.line){
+        contentLineSet.add(content.range.start.line);
+    }
+    // contentClassSet.add(Object.getPrototypeOf(content));
+    const res: IContent[] = []
+    subContents.forEach(con => {
+        if (con) {
+            if (con.range.start.line != con.range.end.line) {
+                res.push(con);
+            } else {
+                // one line content
+                // const proto = Object.getPrototypeOf(con);
+                if (!contentLineSet.has(con.range.start.line)) {
+                    res.push(con);
+                    contentLineSet.add(con.range.start.line);
+                    // contentClassSet.add(proto);
+                }
+            }
+        }
+    })
+    return res;
 }

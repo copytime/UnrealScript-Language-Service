@@ -9,6 +9,7 @@ import { UCParser } from 'UC/antlr/generated/UCParser';
 import { BraceNewlineRule } from 'Format/BraceNewlineRule';
 import { LineIndentRule } from 'Format/LineIndentRule';
 import { OperatorSpaceRule } from 'Format/OperatorSpaceRule';
+import { UCDocument } from 'UC/document';
 
 export interface IFormatInfo {
     line: number;
@@ -30,6 +31,7 @@ export class FormatContext {
     private tokens: Token[] = [];
     public isInDefaultPropertiesScope: boolean = false;
     readonly formatOption: FormattingOptions;
+    readonly document: UCDocument;
 
 
     public tryGetPrevToken(currentToken: Token): Token | undefined {
@@ -40,7 +42,8 @@ export class FormatContext {
         return this.tokens[currentToken.tokenIndex + 1];
     }
 
-    constructor(tokens: Token[], options: FormattingOptions) {
+    constructor(document:UCDocument,tokens: Token[], options: FormattingOptions) {
+        this.document = document;
         this.tokens = tokens;
         this.indentLevel = 0;
         this.isInDefaultPropertiesScope = false;
@@ -53,7 +56,7 @@ export class FormatContext {
     }
 }
 
-export function getDocumentFormat(textDoucment: TextDocumentIdentifier, options: FormattingOptions) {
+export async function getDocumentFormat(document:UCDocument,textDocId: TextDocumentIdentifier, options: FormattingOptions) {
     const editArr: TextEdit[] = [];
 
 
@@ -69,12 +72,13 @@ export function getDocumentFormat(textDoucment: TextDocumentIdentifier, options:
     // 01|first line;
     // 02|second line;
     // 03|this @is a line of code;
+
     let text = ""
-    const textDocument = ActiveTextDocuments.get(textDoucment.uri);
+    const textDocument = ActiveTextDocuments.get(textDocId.uri);
     if (textDocument) {
         text = textDocument.getText();
     } else {
-        text = readTextByURI(textDoucment.uri);
+        text = readTextByURI(textDocId.uri);
     }
     const inputStream = UCInputStream.fromString(text);
     const lexer = new UCLexer(inputStream);
@@ -83,7 +87,7 @@ export function getDocumentFormat(textDoucment: TextDocumentIdentifier, options:
     const tokenStream = new UCTokenStream(lexer);
     tokenStream.fill();
     const tokens = tokenStream.getTokens();
-    const ctx = new FormatContext(tokens, options);
+    const ctx = new FormatContext(document,tokens, options);
 
     const formatRules = buildRules();
 
@@ -132,23 +136,23 @@ export function getDocumentFormat(textDoucment: TextDocumentIdentifier, options:
 
 function buildRules(): IFormatRule[] {
     return [
+        new LineIndentRule(),
         new OperatorSpaceRule(),
         new BraceNewlineRule(),
-        new LineIndentRule()
     ]
 }
 
 function preProcessCtx(ctx: FormatContext, currentToken: Token,) {
-    switch (currentToken.type) {
-        case UCParser.CLOSE_BRACE:
-            ctx.indentLevel--;
-            if (ctx.indentLevel === 0 && ctx.isInDefaultPropertiesScope) {
-                ctx.isInDefaultPropertiesScope = false;
-            }
-            break;
-        default:
-            break;
-    }
+    // switch (currentToken.type) {
+    //     case UCParser.CLOSE_BRACE:
+    //         ctx.indentLevel--;
+    //         if (ctx.indentLevel === 0 && ctx.isInDefaultPropertiesScope) {
+    //             ctx.isInDefaultPropertiesScope = false;
+    //         }
+    //         break;
+    //     default:
+    //         break;
+    // }
 }
 
 function postProcessCtx(ctx: FormatContext, currentToken: Token,) {
@@ -157,7 +161,7 @@ function postProcessCtx(ctx: FormatContext, currentToken: Token,) {
             ctx.isInDefaultPropertiesScope = true;
             break;
         case UCParser.OPEN_BRACE:
-            ctx.indentLevel++;
+            // ctx.indentLevel++;
             break;
         default:
             break;

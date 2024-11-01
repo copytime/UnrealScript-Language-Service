@@ -1045,18 +1045,22 @@ connection.onExecuteCommand(async e => {
 });
 
 connection.onDocumentFormatting(async e=>{
-    const work = await connection.window.createWorkDoneProgress();
-    work.begin(
-        'Formating document',
-        0.0,
-        'Formating...',
-        true);
-    let res:TextEdit[];
-    try {
-        res = getDocumentFormat(e.textDocument,e.options);
+    let res:TextEdit[] = [];
+    const document = await awaitDocumentDelivery(e.textDocument, 5000);
+    if (document) {
+        const work = await connection.window.createWorkDoneProgress();
+        work.begin(
+            'Formating document',
+            0.0,
+            'Formating...',
+            true);
+        try {
+            res = await getDocumentFormat(document,e.textDocument,e.options);
+        }
+        finally{
+            work.done();
+        }
     }
-    finally{
-        work.done();
-    }
-    return res ?? [];
+
+    return res;
 })
