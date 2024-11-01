@@ -4,7 +4,7 @@ import { UCParser } from 'UC/antlr/generated/UCParser';
 import { UCMemberExpression } from 'UC/expressions';
 import { intersectsWith } from 'UC/helpers';
 import { UCBlock, UCExpressionStatement, UCForStatement, UCIfStatement } from 'UC/statements';
-import { isStatement, isSymbol, UCFieldSymbol, UCMethodSymbol, UCPropertySymbol } from 'UC/Symbols';
+import { isStatement, isSymbol, UCClassSymbol, UCFieldSymbol, UCMethodSymbol, UCPropertySymbol } from 'UC/Symbols';
 import { Position, Range } from 'vscode-languageserver';
 
 export class LineIndentRule implements IFormatRule {
@@ -90,7 +90,7 @@ export class LineIndentRule implements IFormatRule {
             return
         }
 
-        const docContent = ctx.document.class.children
+        const docContent = ctx.document.class
         if (!docContent) {
             return;
         }
@@ -111,18 +111,35 @@ export class LineIndentRule implements IFormatRule {
                 content.next._outerContent = content;
                 this.setCtxIndent(ctx, content.next, position);
             }
+            // class symbol is special,
+            // if a content is not in class 'range', it might be in class 'children' property
+            // because class 'range' only contains the class definition parts
+            if (content instanceof UCClassSymbol) {
+                if (content.children) {
+                    this.setCtxIndent(ctx, content.children, position);
+                }
+            }
             return;
         }
 
 
         // Find all value with 'range' property but except 'outer' and 'id'
         let subContents = Object.entries(content).filter(entry => {
-            return entry[0] != "outer"
-                && entry[0] != "id"
+            return entry[0] != "outer"  // dont want to go backwards
+                && entry[0] != "id"     // it has no useful info
                 && entry[0] != "type"
                 // && entry[0] != "next"    // include 'next' because 'post operator expression' of 'for statement' is in 'next'
-                && entry[0] != "reference"
-                && entry[0] != "_outerContent"
+                && entry[0] != "reference"  // we dont need to go into this detail symbol info
+                && entry[0] != "_outerContent"  // extra info for line indent only, dont want to go backwards
+
+                && entry[0] != "extendsType"    // 'class' or 'UCCLassSymbol' has 'extendsType', we dont need to go into this detail info
+                && entry[0] != "defaults"   // 'class' or 'UCCLassSymbol' has 'defaults', we dont need to go into this detail info
+                && entry[0] != "withinType"   // 'class' or 'UCCLassSymbol'
+                && entry[0] != "within"   // 'class' or 'UCCLassSymbol'
+                && entry[0] != "dependsOnTypes"   // 'class' or 'UCCLassSymbol'
+                && entry[0] != "implementsTypes"   // 'class' or 'UCCLassSymbol'
+                && entry[0] != "super"   // 'class' or 'UCCLassSymbol'
+
                 && typeof entry[1] == "object"
                 && (entry[1] as Object).hasOwnProperty("range");
         }).map(entry => entry[1] as IContent)
@@ -145,6 +162,14 @@ export class LineIndentRule implements IFormatRule {
                 const statement = statements[index];
                 (statement as IContent)._outerContent = content;
                 this.setCtxIndent(ctx, statement, position);
+            }
+        }
+
+
+        // add indent for class definition in different line
+        if (content instanceof UCClassSymbol) {
+            if (position.line != content.range.start.line) {
+                ctx.indentLevel++;
             }
         }
 
