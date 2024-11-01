@@ -10,6 +10,7 @@ import { BraceNewlineRule } from 'Format/BraceNewlineRule';
 import { LineIndentRule } from 'Format/LineIndentRule';
 import { OperatorSpaceRule } from 'Format/OperatorSpaceRule';
 import { UCDocument } from 'UC/document';
+import { CommonSpaceRule } from 'Format/CommonSpaceRule';
 
 export interface IFormatInfo {
     line: number;
@@ -137,6 +138,7 @@ export async function getDocumentFormat(document:UCDocument,textDocId: TextDocum
 function buildRules(): IFormatRule[] {
     return [
         new LineIndentRule(),
+        new CommonSpaceRule(),
         new OperatorSpaceRule(),
         new BraceNewlineRule(),
     ]
