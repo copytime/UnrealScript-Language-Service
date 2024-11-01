@@ -16,7 +16,7 @@ export class OperatorSpaceRule implements IFormatRule {
             //left hand token
             const leftHandToken = this.findSameLineToken(ctx.tryGetPrevToken.bind(ctx), currentToken);
             if (leftHandToken.token && leftHandToken.token.type != UCParser.OPEN_PARENS) {
-                const expectedLength = this.getExpectedLength(ctx, currentToken, false);
+                const expectedLength = this.getExpectedLength(ctx, currentToken, false, false);
                 const actualLength = this.getWSLength(ctx.formatOption.tabSize, leftHandToken.wsToken);
                 if (expectedLength != actualLength) {
                     const fixedText = " ".repeat(expectedLength);
@@ -36,7 +36,7 @@ export class OperatorSpaceRule implements IFormatRule {
             const rightHandToken = this.findSameLineToken(ctx.tryGetNextToken.bind(ctx), currentToken);
             if (rightHandToken.token) {
                 const isPrefixOperator = this.isPrefixOperator(leftHandToken.token, currentToken, rightHandToken.token);
-                const expectedLength = this.getExpectedLength(ctx, currentToken, isPrefixOperator);
+                const expectedLength = this.getExpectedLength(ctx, currentToken, isPrefixOperator, true);
                 const actualLength = this.getWSLength(ctx.formatOption.tabSize, rightHandToken.wsToken);
                 if (expectedLength != actualLength) {
                     const fixedText = " ".repeat(expectedLength);
@@ -147,7 +147,7 @@ export class OperatorSpaceRule implements IFormatRule {
         return count;
     }
 
-    getExpectedLength(ctx: FormatContext, currentToken: Token, isPrefixOperator: boolean): 0 | 1 {
+    getExpectedLength(ctx: FormatContext, currentToken: Token, isPrefixOperator: boolean, isRight: boolean): 0 | 1 {
         if (ctx.isInDefaultPropertiesScope) {
             return 0;
         }
@@ -160,6 +160,51 @@ export class OperatorSpaceRule implements IFormatRule {
         }
         if (isPrefixOperator) {
             return 0;
+        }
+
+        if (currentToken.type == UCParser.LT) {
+            const prevTokenInfo = this.findSameLineToken(ctx.tryGetPrevToken.bind(ctx), currentToken);
+            const prevToken = prevTokenInfo.token;
+
+            if (prevToken?.type == UCParser.KW_ARRAY            // array<       e.g. array<int>
+                || prevToken?.type == UCParser.KW_CLASS         // map<         e.g. map<int>
+                || prevToken?.type == UCParser.KW_DELEGATE      // delegete<    e.g. delegete<int>
+            ) {
+                return 0;
+            }
+        }
+
+        if (currentToken.type == UCParser.GT && !isRight) {
+            //find prev matched <
+            let prevMatchedLT: Token|undefined = currentToken;
+            let level = 1;
+            while (true) {
+                const prevTokenInfo = this.findSameLineToken(ctx.tryGetPrevToken.bind(ctx), prevMatchedLT);
+                prevMatchedLT = prevTokenInfo.token;
+                if (!prevMatchedLT) {
+                    break;
+                }
+                if (prevMatchedLT.type == UCParser.GT) {
+                    level += 1;
+                }
+                if (prevMatchedLT.type == UCParser.LT) {
+                    level -= 1;
+                }
+                if (level == 0) {
+                    break;
+                }
+            }
+            if (prevMatchedLT && prevMatchedLT.charPositionInLine != currentToken.charPositionInLine && prevMatchedLT.type == UCParser.LT) {
+                const prevTokenInfo = this.findSameLineToken(ctx.tryGetPrevToken.bind(ctx), prevMatchedLT);
+                const prevToken = prevTokenInfo.token;
+
+                if (prevToken?.type == UCParser.KW_ARRAY            // array<       e.g. array<int>
+                    || prevToken?.type == UCParser.KW_CLASS         // map<         e.g. map<int>
+                    || prevToken?.type == UCParser.KW_DELEGATE      // delegete<    e.g. delegete<int>
+                ) {
+                    return 0;
+                }
+            }
         }
         return 1;
     }
