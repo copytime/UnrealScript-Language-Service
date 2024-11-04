@@ -30,6 +30,7 @@ export class FormatContext {
 
 
     private tokens: Token[] = [];
+    private lineTokensMap: Map<number, Token[]> = new Map();
     readonly formatOption: FormattingOptions;
     readonly document: UCDocument;
 
@@ -44,7 +45,7 @@ export class FormatContext {
         return this.tokens[currentToken.tokenIndex + 1];
     }
 
-    constructor(document:UCDocument,tokens: Token[], options: FormattingOptions) {
+    constructor(document: UCDocument, tokens: Token[], options: FormattingOptions) {
         this.document = document;
         this.tokens = tokens;
         this.indentLevel = 0;
@@ -56,9 +57,69 @@ export class FormatContext {
             :
             "\t";
     }
+
+    public getInLineTokensByCurrentToken(currentToken: Token): Token[] {
+
+
+        const res = this.lineTokensMap.get(currentToken.line);
+        if (res) {
+            return res;
+        }
+
+        const prevTokens: Token[] = [];
+        const nextTokens: Token[] = [];
+        for (let prevToken: Token | undefined = currentToken; prevToken;) {
+            prevToken = this.tryGetPrevToken(prevToken);
+            if (prevToken?.line !== currentToken.line) {
+                prevToken = undefined;
+            } else {
+                prevTokens.unshift(prevToken);
+            }
+        }
+        for (let nextToken: Token | undefined = currentToken; nextToken;) {
+            nextToken = this.tryGetNextToken(nextToken);
+            if (nextToken?.line !== currentToken.line) {
+                nextToken = undefined;
+            } else {
+                nextTokens.push(nextToken);
+            }
+        }
+
+        prevTokens.push(currentToken, ...nextTokens);
+        //cache line token
+        this.lineTokensMap.set(currentToken.line, prevTokens);
+        return prevTokens;
+    }
+
+    public getInLineStrByCurrentToken(currentToken: Token): string {
+        const tokens = this.getInLineTokensByCurrentToken(currentToken);
+        return tokens.map(t => t.text).join("");
+    }
+
+    public getInLineTokensByLine(lineNumber: number): Token[] {
+
+        const res = this.lineTokensMap.get(lineNumber);
+        if (res) {
+            return res;
+        }
+
+
+        //TODO: use binary search
+        const token = this.tokens.find(t => t.line === lineNumber);
+        if (token) {
+            return this.getInLineTokensByCurrentToken(token);
+        }
+
+        return [];
+    }
+
+    public getInLineStrByLine(lineNumber: number): string {
+        const tokens = this.getInLineTokensByLine(lineNumber);
+        return tokens.map(t => t.text).join("");
+    }
 }
 
-export async function getDocumentFormat(document:UCDocument,textDocId: TextDocumentIdentifier, options: FormattingOptions) {
+export async function getDocumentFormat(document: UCDocument, textDocId: TextDocumentIdentifier, options: FormattingOptions) {
     const editArr: TextEdit[] = [];
 
 
@@ -89,7 +150,7 @@ export async function getDocumentFormat(document:UCDocument,textDocId: TextDocum
     const tokenStream = new UCTokenStream(lexer);
     tokenStream.fill();
     const tokens = tokenStream.getTokens();
-    const ctx = new FormatContext(document,tokens, options);
+    const ctx = new FormatContext(document, tokens, options);
 
     const formatRules = buildRules();
 

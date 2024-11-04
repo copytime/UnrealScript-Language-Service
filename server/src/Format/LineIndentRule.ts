@@ -85,7 +85,7 @@ export class LineIndentRule implements IFormatRule {
         ctx.indentLevel = 0;
         const curTokenLine = curToken.line - 1;
         const curTokenCharPositionInLine = curToken.charPositionInLine;
-        const curTokenPosition = Position.create(curTokenLine, curTokenCharPositionInLine);
+        const curTokenDocPosition = Position.create(curTokenLine, curTokenCharPositionInLine);
         if (!ctx.document.class) {
             return
         }
@@ -97,26 +97,26 @@ export class LineIndentRule implements IFormatRule {
 
 
 
-        this.setCtxIndentWrapper(ctx, docContent, curTokenPosition);
+        this.setCtxIndentWrapper(ctx, docContent, { currentToken: curToken, positionInDoc: curTokenDocPosition });
 
     }
 
-    setCtxIndent(ctx: FormatContext, content: IContent | undefined, position: Position) {
+    setCtxIndent(ctx: FormatContext, content: IContent | undefined, currentTokenInfo: ICurrentTokenInfo) {
         if (!content) {
             return;
         }
         // Not in the content range, jump to next
-        if (!(position.line >= content.range.start.line && position.line <= content.range.end.line)) {
+        if (!(currentTokenInfo.positionInDoc.line >= content.range.start.line && currentTokenInfo.positionInDoc.line <= content.range.end.line)) {
             if (content.next) {
                 content.next._outerContent = content;
-                this.setCtxIndentWrapper(ctx, content.next, position);
+                this.setCtxIndentWrapper(ctx, content.next, currentTokenInfo);
             }
             // class symbol is special,
             // if a content is not in class 'range', it might be in class 'children' property
             // because class 'range' only contains the class definition parts
             if (content instanceof UCClassSymbol) {
                 if (content.children) {
-                    this.setCtxIndentWrapper(ctx, content.children, position);
+                    this.setCtxIndentWrapper(ctx, content.children, currentTokenInfo);
                 }
             }
             return;
@@ -132,14 +132,14 @@ export class LineIndentRule implements IFormatRule {
             // 'UCArchetypeSymbol' is fine but 'UCBlock' will add another level of indent,
             // that will cause an extra indent before 'begin object' and 'end object'
             // so we just return if current token line == 'UCArchetypeBlockStatement' range start line or end line
-            if (position.line == content.range.start.line || position.line == content.range.end.line) {
+            if (currentTokenInfo.positionInDoc.line == content.range.start.line || currentTokenInfo.positionInDoc.line == content.range.end.line) {
                 return;
             }
         }
 
         if (ctx.isInRepliactionScope && content instanceof UCRepIfStatement) {
             // add indent for replication variables in different line
-            if (position.line > content.range.start.line) {
+            if (currentTokenInfo.positionInDoc.line > content.range.start.line) {
                 ctx.indentLevel++;
                 return;
             }
@@ -172,25 +172,66 @@ export class LineIndentRule implements IFormatRule {
         for (let index = 0; index < subContents.length; index++) {
             const subContent = subContents[index];
             subContent._outerContent = content;
-            this.setCtxIndentWrapper(ctx, subContent, position);
+            this.setCtxIndentWrapper(ctx, subContent, currentTokenInfo);
         }
 
 
 
         if (content instanceof UCBlock) {
-            ctx.indentLevel++;
+            // check 'else if'
+            // do not increase indent level in this 'else if' line
+            // but we can not distinguish
+
+            // --------------------
+            // if(foo)
+            // {
+            // }
+            // else if(bar)
+            // {
+            // }
+            // --------------------
+
+            // and
+
+            // --------------------
+            // if(foo)
+            // {
+            // }
+            // else
+            // {
+            //     if(bar)
+            //     {
+            //     }
+            // }
+            // --------------------
+
+            // in the document tree, they are all the same
+            // try use regex hack it for now
+            const reg = /else\s+if/ig;
+
+            const isInElseIf =
+                content.statements.length === 1
+                && content.statements[0] instanceof UCIfStatement
+                && reg.test(ctx.getInLineStrByLine(content.range.start.line+1)
+            );
+
+            if (!isInElseIf) {
+                ctx.indentLevel++;
+            }
+
+
             const statements = removeSamelineContent(content, content.statements)
             for (let index = 0; index < statements.length; index++) {
                 const statement = statements[index];
                 (statement as IContent)._outerContent = content;
-                this.setCtxIndentWrapper(ctx, statement, position);
+                this.setCtxIndentWrapper(ctx, statement, currentTokenInfo);
             }
         }
 
 
         // add indent for class definition in different line
         if (content instanceof UCClassSymbol) {
-            if (position.line != content.range.start.line) {
+            if (currentTokenInfo.positionInDoc.line != content.range.start.line) {
                 ctx.indentLevel++;
             }
         }
@@ -251,7 +292,7 @@ export class LineIndentRule implements IFormatRule {
 
 
 
-    private setCtxIndentWrapper(ctx: FormatContext, content: IContent | undefined, position: Position) {
+    private setCtxIndentWrapper(ctx: FormatContext, content: IContent | undefined, currentTokenInfo: ICurrentTokenInfo) {
         if (!content) {
             return
         }
@@ -268,7 +309,7 @@ export class LineIndentRule implements IFormatRule {
         }
 
         //set
-        this.setCtxIndent(ctx, content, position);
+        this.setCtxIndent(ctx, content, currentTokenInfo);
 
         //post set warpper
         switch (symbolKind) {
@@ -285,6 +326,11 @@ interface IContent {
     next?: IContent
     _outerContent?: IContent
     kind?: UCSymbolKind | UCNodeKind
+}
+
+interface ICurrentTokenInfo {
+    currentToken: Token
+    positionInDoc: Position
 }
 
 function removeSamelineContent(content: IContent, subContents: (IContent | undefined)[]): IContent[] {
