@@ -3,9 +3,9 @@ import { FormatContext, IFormatInfo, IFormatRule } from 'documentFormater';
 import { UCParser } from 'UC/antlr/generated/UCParser';
 import { UCMemberExpression } from 'UC/expressions';
 import { intersectsWith } from 'UC/helpers';
-import { UCArchetypeBlockStatement, UCBlock, UCExpressionStatement, UCForStatement, UCIfStatement } from 'UC/statements';
-import { isMethodSymbol, isScriptStructSymbol, isStatement, isSymbol, UCClassSymbol, UCFieldSymbol, UCMethodSymbol, UCPropertySymbol, UCStructSymbol } from 'UC/Symbols';
-import { Position, Range } from 'vscode-languageserver';
+import { UCArchetypeBlockStatement, UCBlock, UCExpressionStatement, UCForStatement, UCIfStatement, UCRepIfStatement } from 'UC/statements';
+import { isMethodSymbol, isNode, isScriptStructSymbol, isStatement, isSymbol, UCClassSymbol, UCFieldSymbol, UCMethodSymbol, UCNodeKind, UCPropertySymbol, UCStructSymbol, UCSymbolKind } from 'UC/Symbols';
+import { Position, Range, SymbolKind } from 'vscode-languageserver';
 
 export class LineIndentRule implements IFormatRule {
 
@@ -97,7 +97,7 @@ export class LineIndentRule implements IFormatRule {
 
 
 
-        this.setCtxIndent(ctx, docContent, curTokenPosition);
+        this.setCtxIndentWrapper(ctx, docContent, curTokenPosition);
 
     }
 
@@ -109,14 +109,14 @@ export class LineIndentRule implements IFormatRule {
         if (!(position.line >= content.range.start.line && position.line <= content.range.end.line)) {
             if (content.next) {
                 content.next._outerContent = content;
-                this.setCtxIndent(ctx, content.next, position);
+                this.setCtxIndentWrapper(ctx, content.next, position);
             }
             // class symbol is special,
             // if a content is not in class 'range', it might be in class 'children' property
             // because class 'range' only contains the class definition parts
             if (content instanceof UCClassSymbol) {
                 if (content.children) {
-                    this.setCtxIndent(ctx, content.children, position);
+                    this.setCtxIndentWrapper(ctx, content.children, position);
                 }
             }
             return;
@@ -137,6 +137,13 @@ export class LineIndentRule implements IFormatRule {
             }
         }
 
+        if (ctx.isInRepliactionScope && content instanceof UCRepIfStatement) {
+            // add indent for replication variables in different line
+            if (position.line > content.range.start.line) {
+                ctx.indentLevel++;
+                return;
+            }
+        }
 
         // Find all value with 'range' property but except 'outer' and 'id'
         let subContents = Object.entries(content).filter(entry => {
@@ -164,7 +171,7 @@ export class LineIndentRule implements IFormatRule {
         for (let index = 0; index < subContents.length; index++) {
             const subContent = subContents[index];
             subContent._outerContent = content;
-            this.setCtxIndent(ctx, subContent, position);
+            this.setCtxIndentWrapper(ctx, subContent, position);
         }
 
 
@@ -175,7 +182,7 @@ export class LineIndentRule implements IFormatRule {
             for (let index = 0; index < statements.length; index++) {
                 const statement = statements[index];
                 (statement as IContent)._outerContent = content;
-                this.setCtxIndent(ctx, statement, position);
+                this.setCtxIndentWrapper(ctx, statement, position);
             }
         }
 
@@ -202,7 +209,7 @@ export class LineIndentRule implements IFormatRule {
         }
 
 
-        if (!isStatement(content as any)) {
+        if (!isNode(content) || (isNode(content) && !isStatement(content))) {
             const outerStatement: UCExpressionStatement | undefined = this.findOuterStatement(content);
             // add indent for condition expression in different line 'if'
             // e.g.
@@ -241,12 +248,42 @@ export class LineIndentRule implements IFormatRule {
         return outerContent;
     }
 
+
+
+    private setCtxIndentWrapper(ctx: FormatContext, content: IContent | undefined, position: Position) {
+        if (!content) {
+            return
+        }
+        let symbolKind = UCSymbolKind.None;
+        if (isSymbol(content)) {
+            symbolKind = content.kind;
+        }
+
+        //pre set warpper
+        switch (symbolKind) {
+            case UCSymbolKind.ReplicationBlock:
+                ctx.isInRepliactionScope = true;
+                break;
+        }
+
+        //set
+        this.setCtxIndent(ctx, content, position);
+
+        //post set warpper
+        switch (symbolKind) {
+            case UCSymbolKind.ReplicationBlock:
+                ctx.isInRepliactionScope = false;
+                break;
+        }
+    }
+
 }
 
 interface IContent {
     range: Range
     next?: IContent
     _outerContent?: IContent
+    kind?: UCSymbolKind | UCNodeKind
 }
 
 function removeSamelineContent(content: IContent, subContents: (IContent | undefined)[]): IContent[] {

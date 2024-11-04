@@ -1334,8 +1334,12 @@ export function hasModifiers(
     return typeof symbol.modifiers !== 'undefined';
 }
 
-export function isSymbol(symbol: { kind?: UCSymbolKind }): symbol is ISymbol {
-    return typeof symbol.kind !== 'undefined';
+export function isSymbol(symbol: { kind?: any, id?:Identifier }) : symbol is ISymbol{
+    return typeof symbol.kind !== 'undefined' && typeof symbol.id !== "undefined";
+}
+
+export function isNode(symbol: { kind?: any, id?:Identifier }) : symbol is INode{
+    return typeof symbol.kind !== 'undefined' && typeof symbol.id == "undefined";
 }
 
 export function isPackage(symbol: ISymbol): symbol is UCPackage {
@@ -1426,13 +1430,7 @@ export function isArchetypeSymbol(symbol: ISymbol): symbol is UCArchetypeSymbol 
 }
 
 export function isStatement(symbol: INode): symbol is IStatement {
-    // ITypeSymbol + ISymbol = IStatement ??!!!!   so bad!
-    // And what if the 'kind' property in 'UCTypeSymbol' just happened to be 'UCSymbolKind.Type'?
-    // Which is just as same as 'UCNodeKind.Statement', they are all number '1'!
-
-    // thankfully there is a property named 'flags' only in ITypeSymbol.
-    // use this 'flags' to distinguish between them.
-    return symbol.kind === UCNodeKind.Statement && !((symbol as Object).hasOwnProperty("flags"));
+    return symbol.kind === UCNodeKind.Statement;
 }
 
 export function isExpression(symbol: INode): symbol is IExpression {

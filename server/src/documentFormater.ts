@@ -30,10 +30,11 @@ export class FormatContext {
 
 
     private tokens: Token[] = [];
-    public isInDefaultPropertiesScope: boolean = false;
     readonly formatOption: FormattingOptions;
     readonly document: UCDocument;
 
+    public isInDefaultPropertiesScope: boolean = false;
+    public isInRepliactionScope: boolean = false;
 
     public tryGetPrevToken(currentToken: Token): Token | undefined {
         return this.tokens[currentToken.tokenIndex - 1];
