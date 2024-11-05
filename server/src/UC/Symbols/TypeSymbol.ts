@@ -597,7 +597,7 @@ export class UCQualifiedTypeSymbol implements ITypeSymbol {
     }
 
     static is(symbol: ISymbol): symbol is UCQualifiedTypeSymbol {
-        return Object.prototype.hasOwnProperty.call(symbol, 'type');
+        return Object.hasOwn(symbol, 'type');
     }
 
     getName(): Name {

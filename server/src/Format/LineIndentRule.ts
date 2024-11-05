@@ -175,7 +175,7 @@ export class LineIndentRule implements IFormatRule {
                 && entry[0] != "overriddenMethod"
 
                 && typeof entry[1] == "object"
-                && (entry[1] as Object).hasOwnProperty("range");
+                && Object.hasOwn(entry[1],"range");
         }).map(entry => entry[1] as IContent)
 
         subContents = removeSamelineContent(content, subContents);
