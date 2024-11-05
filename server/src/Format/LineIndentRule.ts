@@ -20,6 +20,7 @@ export class LineIndentRule implements IFormatRule {
         if (currentToken.line != this.prevLine) {
 
             const nextToken = ctx.tryGetNextToken(currentToken);
+            let isUseOuterIndent = false;
 
             if (currentToken.type != UCParser.LINE_COMMENT  //ignore line comment
                 && currentToken.type != UCParser.BLOCK_COMMENT //ignore block comment
@@ -28,7 +29,6 @@ export class LineIndentRule implements IFormatRule {
                 let currentTokenLineNumber = currentToken.line - 1;
                 if (currentToken.type === UCParser.OPEN_BRACE
                     || (nextToken && nextToken.type === UCParser.OPEN_BRACE)) {
-                    // fix add new line after '{':
                     // current token is '{'
                     // --------------------
                     // if(b)
@@ -46,15 +46,18 @@ export class LineIndentRule implements IFormatRule {
                     // }
                     // --------------------
 
-                    // use last line to hack fix for it.
-                    currentTokenLineNumber -= 1;
+                    isUseOuterIndent = true;
                 }
                 ctx.indentLevel = 0;
                 const curTokenDocPosition = Position.create(currentTokenLineNumber, currentToken.charPositionInLine);
                 if (ctx.document.class) {
                     const docContent = ctx.document.class
                     if (docContent) {
-                        this.setCtxIndentWrapper(ctx, docContent, { currentToken: currentToken, positionInDoc: curTokenDocPosition });
+                        this.setCtxIndentWrapper(ctx, docContent, {
+                            currentToken: currentToken,
+                            positionInDoc: curTokenDocPosition,
+                            isUseOuterIndent
+                        });
                     }
                 }
 
@@ -112,24 +115,28 @@ export class LineIndentRule implements IFormatRule {
     }
 
 
-    setCtxIndent(ctx: FormatContext, content: IContent | undefined, currentTokenInfo: ICurrentTokenInfo) {
+    setCtxIndent(ctx: FormatContext, content: IContent | undefined, option: ILineIndentOptions) {
         if (!content) {
             return;
         }
         // Not in the content range, jump to next
-        if (!(currentTokenInfo.positionInDoc.line >= content.range.start.line && currentTokenInfo.positionInDoc.line <= content.range.end.line)) {
+        if (!(option.positionInDoc.line >= content.range.start.line && option.positionInDoc.line <= content.range.end.line)) {
             if (content.next) {
                 content.next._outerContent = content;
-                this.setCtxIndentWrapper(ctx, content.next, currentTokenInfo);
+                this.setCtxIndentWrapper(ctx, content.next, option);
             }
             // class symbol is special,
             // if a content is not in class 'range', it might be in class 'children' property
             // because class 'range' only contains the class definition parts
             if (content instanceof UCClassSymbol) {
                 if (content.children) {
-                    this.setCtxIndentWrapper(ctx, content.children, currentTokenInfo);
+                    this.setCtxIndentWrapper(ctx, content.children, option);
                 }
             }
+            return;
+        }
+
+        if (option.isUseOuterIndent) {
             return;
         }
 
@@ -143,14 +150,14 @@ export class LineIndentRule implements IFormatRule {
             // 'UCArchetypeSymbol' is fine but 'UCBlock' will add another level of indent,
             // that will cause an extra indent before 'begin object' and 'end object'
             // so we just return if current token line == 'UCArchetypeBlockStatement' range start line or end line
-            if (currentTokenInfo.positionInDoc.line == content.range.start.line || currentTokenInfo.positionInDoc.line == content.range.end.line) {
+            if (option.positionInDoc.line == content.range.start.line || option.positionInDoc.line == content.range.end.line) {
                 return;
             }
         }
 
         if (ctx.isInRepliactionScope && content instanceof UCRepIfStatement) {
             // add indent for replication variables in different line
-            if (currentTokenInfo.positionInDoc.line > content.range.start.line) {
+            if (option.positionInDoc.line > content.range.start.line) {
                 ctx.indentLevel++;
                 return;
             }
@@ -175,7 +182,7 @@ export class LineIndentRule implements IFormatRule {
                 && entry[0] != "overriddenMethod"
 
                 && typeof entry[1] == "object"
-                && Object.hasOwn(entry[1],"range");
+                && Object.hasOwn(entry[1], "range");
         }).map(entry => entry[1] as IContent)
 
         subContents = removeSamelineContent(content, subContents);
@@ -183,7 +190,7 @@ export class LineIndentRule implements IFormatRule {
         for (let index = 0; index < subContents.length; index++) {
             const subContent = subContents[index];
             subContent._outerContent = content;
-            this.setCtxIndentWrapper(ctx, subContent, currentTokenInfo);
+            this.setCtxIndentWrapper(ctx, subContent, option);
         }
 
 
@@ -235,14 +242,14 @@ export class LineIndentRule implements IFormatRule {
             for (let index = 0; index < statements.length; index++) {
                 const statement = statements[index];
                 (statement as IContent)._outerContent = content;
-                this.setCtxIndentWrapper(ctx, statement, currentTokenInfo);
+                this.setCtxIndentWrapper(ctx, statement, option);
             }
         }
 
 
         // add indent for class definition in different line
         if (content instanceof UCClassSymbol) {
-            if (currentTokenInfo.positionInDoc.line != content.range.start.line) {
+            if (option.positionInDoc.line != content.range.start.line) {
                 ctx.indentLevel++;
             }
         }
@@ -303,7 +310,7 @@ export class LineIndentRule implements IFormatRule {
 
 
 
-    private setCtxIndentWrapper(ctx: FormatContext, content: IContent | undefined, currentTokenInfo: ICurrentTokenInfo) {
+    private setCtxIndentWrapper(ctx: FormatContext, content: IContent | undefined, option: ILineIndentOptions) {
         if (!content) {
             return
         }
@@ -320,7 +327,7 @@ export class LineIndentRule implements IFormatRule {
         }
 
         //set
-        this.setCtxIndent(ctx, content, currentTokenInfo);
+        this.setCtxIndent(ctx, content, option);
 
         //post set warpper
         switch (symbolKind) {
@@ -339,9 +346,10 @@ interface IContent {
     kind?: UCSymbolKind | UCNodeKind
 }
 
-interface ICurrentTokenInfo {
+interface ILineIndentOptions {
     currentToken: Token
     positionInDoc: Position
+    isUseOuterIndent: boolean | undefined
 }
 
 function removeSamelineContent(content: IContent, subContents: (IContent | undefined)[]): IContent[] {
