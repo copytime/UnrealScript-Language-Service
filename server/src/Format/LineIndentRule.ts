@@ -25,7 +25,38 @@ export class LineIndentRule implements IFormatRule {
                 && currentToken.type != UCParser.BLOCK_COMMENT //ignore block comment
                 && (!nextToken || (nextToken.type != UCParser.LINE_COMMENT && nextToken.type != UCParser.BLOCK_COMMENT))
             ) {
-                this.getTokenExpectedIndent(ctx, currentToken);
+                let currentTokenLineNumber = currentToken.line - 1;
+                if (currentToken.type === UCParser.OPEN_BRACE
+                    || (nextToken && nextToken.type === UCParser.OPEN_BRACE)) {
+                    // fix add new line after '{':
+                    // current token is '{'
+                    // --------------------
+                    // if(b)
+                    // { xxx;          <----------- wrong indent here, '{' should not use 'xxx;' as indent content
+                    // }
+                    // --------------------
+
+                    // current token is 'WS', next token is '{'
+                    // --------------------
+                    // if(b)
+                    // {
+                    //      if(bb)
+                    //      {xxx;      <----------- wrong indent here, '{' should not use 'xxx;' as indent content
+                    //      }
+                    // }
+                    // --------------------
+
+                    // use last line to hack fix for it.
+                    currentTokenLineNumber -= 1;
+                }
+                ctx.indentLevel = 0;
+                const curTokenDocPosition = Position.create(currentTokenLineNumber, currentToken.charPositionInLine);
+                if (ctx.document.class) {
+                    const docContent = ctx.document.class
+                    if (docContent) {
+                        this.setCtxIndentWrapper(ctx, docContent, { currentToken: currentToken, positionInDoc: curTokenDocPosition });
+                    }
+                }
 
                 // this.indent.push(ctx.indentLevel)
 
@@ -80,26 +111,6 @@ export class LineIndentRule implements IFormatRule {
         return count;
     }
 
-
-    getTokenExpectedIndent(ctx: FormatContext, curToken: Token) {
-        ctx.indentLevel = 0;
-        const curTokenLine = curToken.line - 1;
-        const curTokenCharPositionInLine = curToken.charPositionInLine;
-        const curTokenDocPosition = Position.create(curTokenLine, curTokenCharPositionInLine);
-        if (!ctx.document.class) {
-            return
-        }
-
-        const docContent = ctx.document.class
-        if (!docContent) {
-            return;
-        }
-
-
-
-        this.setCtxIndentWrapper(ctx, docContent, { currentToken: curToken, positionInDoc: curTokenDocPosition });
-
-    }
 
     setCtxIndent(ctx: FormatContext, content: IContent | undefined, currentTokenInfo: ICurrentTokenInfo) {
         if (!content) {
@@ -212,8 +223,8 @@ export class LineIndentRule implements IFormatRule {
             const isInElseIf =
                 content.statements.length === 1
                 && content.statements[0] instanceof UCIfStatement
-                && reg.test(ctx.getInLineStrByLine(content.range.start.line+1)
-            );
+                && reg.test(ctx.getInLineStrByLine(content.range.start.line + 1))
+                ;
 
             if (!isInElseIf) {
                 ctx.indentLevel++;
@@ -314,7 +325,7 @@ export class LineIndentRule implements IFormatRule {
         //post set warpper
         switch (symbolKind) {
             case UCSymbolKind.ReplicationBlock:
-                ctx.isInRepliactionScope = false;
+                ctx.isInRepliactionScope = false;   //TODO: this is more like a line indent ctx scope, only can be used in this rule. can not share scope info to other rules.
                 break;
         }
     }
