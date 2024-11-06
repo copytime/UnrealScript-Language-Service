@@ -136,7 +136,8 @@ export class LineIndentRule implements IFormatRule {
             return;
         }
 
-        if (option.isUseOuterIndent) {
+        // return if find it(in the same line) but use outer indent
+        if (option.isUseOuterIndent && option.positionInDoc.line === content.range.start.line) {
             return;
         }
 
