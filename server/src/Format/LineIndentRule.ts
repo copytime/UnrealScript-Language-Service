@@ -288,6 +288,12 @@ export class LineIndentRule implements IFormatRule {
             }
         }
 
+        if (content instanceof UCMethodSymbol) {
+            // add indent for 'function' in 'state'
+            if (content.outer instanceof UCStructSymbol && isStateSymbol(content.outer)) {
+                ctx.indentLevel++;
+            }
+        }
 
         if (!isNode(content) || (isNode(content) && !isStatement(content))) {
             const outerStatement: UCExpressionStatement | undefined = this.findOuterStatement(content);
