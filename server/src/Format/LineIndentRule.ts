@@ -195,7 +195,11 @@ export class LineIndentRule implements IFormatRule {
                 && entry[0] != "dependsOnTypes"   // 'class' or 'UCCLassSymbol'
                 && entry[0] != "implementsTypes"   // 'class' or 'UCCLassSymbol'
                 && entry[0] != "super"   // 'class' or 'UCCLassSymbol'
-                && entry[0] != "overriddenMethod"
+
+                && entry[0] != "overriddenMethod"   // 'UCMethodSymbol'
+                && entry[0] != "ignoreRefs"         // 'UCStateSymbol'
+                && entry[0] != "overriddenState"    // 'UCStateSymbol'
+
 
                 && typeof entry[1] == "object"
                 && Object.hasOwn(entry[1], "range");
