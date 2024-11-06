@@ -128,7 +128,7 @@ export class OperatorSpaceRule implements IFormatRule {
 
         if (currentToken.type == UCParser.GT && !isRight) {
             //find prev matched <
-            let prevMatchedLT: Token|undefined = currentToken;
+            let prevMatchedLT: Token | undefined = currentToken;
             let level = 1;
             while (true) {
                 const prevTokenInfo = this.findSameLineToken(ctx.tryGetPrevToken.bind(ctx), prevMatchedLT);
@@ -158,6 +158,26 @@ export class OperatorSpaceRule implements IFormatRule {
                 }
             }
         }
+
+        if (currentToken.type == UCParser.COLON && !isRight) {
+            let hasInterr = false;
+            let token: Token | undefined = currentToken;
+            while (true) {
+                token = ctx.tryGetPrevToken(token);
+                if (!token) {
+                    break;
+                }
+                if (token.type === UCParser.INTERR) {
+                    hasInterr = true;
+                    break;
+                }
+                if (token.line !== currentToken.line) {
+                    break;
+                }
+            }
+            return hasInterr ? 1 : 0;
+        }
+
         return 1;
     }
 
