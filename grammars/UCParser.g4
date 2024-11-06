@@ -252,6 +252,9 @@ identifier
     | 'sizeof')
     ;
 
+labelName:
+	(ID|'begin');
+
 // Parses the following possiblities.
 // Package.Class
 // Class.Field
@@ -901,7 +904,7 @@ continueStatement: 'continue' SEMICOLON;
 stopStatement: 'stop' SEMICOLON;
 // avoid using keyword as label name  to fix default clause in switch statement.
 // but the "Begin" label is special: it is the default starting point for code in that state.
-labeledStatement: (ID|'begin') COLON;
+labeledStatement: labelName COLON;
 // expr is not optional, but we need to ensure we match this statement for every 'goto' identifier.
 // expr=identifier? if generation pre-UC3.
 gotoStatement: 'goto' expr=expression? SEMICOLON;

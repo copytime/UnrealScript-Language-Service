@@ -4,7 +4,7 @@ import { UCParser } from 'UC/antlr/generated/UCParser';
 import { UCMemberExpression } from 'UC/expressions';
 import { intersectsWith } from 'UC/helpers';
 import { UCArchetypeBlockStatement, UCBlock, UCExpressionStatement, UCForStatement, UCIfStatement, UCRepIfStatement } from 'UC/statements';
-import { isMethodSymbol, isNode, isScriptStructSymbol, isStatement, isSymbol, UCClassSymbol, UCFieldSymbol, UCMethodSymbol, UCNodeKind, UCPropertySymbol, UCStructSymbol, UCSymbolKind } from 'UC/Symbols';
+import { isMethodSymbol, isNode, isScriptStructSymbol, isStatement, isStateSymbol, isStruct, isSymbol, UCClassSymbol, UCFieldSymbol, UCMethodSymbol, UCNodeKind, UCPropertySymbol, UCStructSymbol, UCSymbolKind } from 'UC/Symbols';
 import { Position, Range, SymbolKind } from 'vscode-languageserver';
 
 export class LineIndentRule implements IFormatRule {
@@ -141,7 +141,22 @@ export class LineIndentRule implements IFormatRule {
             return;
         }
 
-        const outerContent = content._outerContent;
+
+        //clear indent for labels
+        if (isSymbol(content) && isStruct(content)) {
+            if (typeof content.labels !== "undefined") {
+                const labelsArr = Object.values(content.labels);
+                for (let index = 0; index < labelsArr.length; index++) {
+                    const label = labelsArr[index];
+                    if (label.range.start.line === label.range.end.line
+                        && label.range.start.line === option.positionInDoc.line) {
+                        // clear indent for labels
+                        ctx.indentLevel = 0;
+                        return;
+                    }
+                }
+            }
+        }
 
         if (ctx.isInDefaultPropertiesScope && content instanceof UCArchetypeBlockStatement) {
             // add indent for 'begin object' and 'end object'
@@ -265,6 +280,10 @@ export class LineIndentRule implements IFormatRule {
             }
             // add indent for properties in 'struct'
             if (content.outer instanceof UCStructSymbol && isScriptStructSymbol(content.outer)) {
+                ctx.indentLevel++;
+            }
+            // add indent for properties in 'state'
+            if (content.outer instanceof UCStructSymbol && isStateSymbol(content.outer)) {
                 ctx.indentLevel++;
             }
         }

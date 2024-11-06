@@ -1366,7 +1366,7 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
 
     visitLabeledStatement(ctx: UCGrammar.LabeledStatementContext): UCLabeledStatement {
         const statement = new UCLabeledStatement(rangeFromBounds(ctx.start, ctx.stop));
-        const idNode = ctx.identifier();
+        const idNode = ctx.labelName();
         statement.label = createIdentifier(idNode);
         const struct = this.scope<UCStructSymbol>();
         struct.addLabel(statement.label);
