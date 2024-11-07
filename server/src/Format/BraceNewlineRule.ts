@@ -18,7 +18,7 @@ export class BraceNewlineRule implements IFormatRule {
                 //add new line before '{'
                 addNewline = true;
             }
-            if (this.prevToken && this.prevToken.type == UCParser.OPEN_BRACE && currentToken.type != UCParser.NEWLINE) {
+            if (this.prevToken && this.prevToken.type === UCParser.OPEN_BRACE && currentToken.type !== UCParser.NEWLINE && currentToken.type !== UCParser.WS) {
                 //add new line after '{'
                 addNewline = true;
                 indentLevel += 1;
