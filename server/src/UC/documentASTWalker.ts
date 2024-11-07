@@ -1271,7 +1271,7 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
         switch (token.type) {
             case UCGrammar.UCParser.DECIMAL_LITERAL:
             case UCGrammar.UCParser.INTEGER_LITERAL: {
-                const expression = new UCIntLiteral(range, ctx._start);
+                const expression = new UCIntLiteral(range, ctx.text);
                 return expression;
             }
         }
@@ -1924,16 +1924,16 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
                 return new UCNoneLiteral(range);
 
             case UCGrammar.UCParser.STRING_LITERAL:
-                return new UCStringLiteral(range, token);
+                return new UCStringLiteral(range, ctx.text);
 
             case UCGrammar.UCParser.INTEGER_LITERAL:
-                return new UCIntLiteral(range, token);
+                return new UCIntLiteral(range, ctx.text);
 
             case UCGrammar.UCParser.DECIMAL_LITERAL:
-                return new UCFloatLiteral(range, token);
+                return new UCFloatLiteral(range, ctx.text);
 
             case UCGrammar.UCParser.BOOLEAN_LITERAL:
-                return new UCBoolLiteral(range, token);
+                return new UCBoolLiteral(range, ctx.text);
 
             case UCGrammar.UCParser.NAME_LITERAL: {
                 const text = token.text!;
@@ -1955,9 +1955,9 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
         let expression: UCFloatLiteral | UCIntLiteral;
         const txt = ctx.text;
         if (txt.includes('.')) {
-            expression = new UCFloatLiteral(range, ctx.start);
+            expression = new UCFloatLiteral(range, txt);
         } else {
-            expression = new UCIntLiteral(range, ctx.start);
+            expression = new UCIntLiteral(range, txt);
         }
         return expression;
     }

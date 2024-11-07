@@ -1258,7 +1258,7 @@ export class UCNewExpression implements IExpression {
 export abstract class UCLiteral implements IExpression {
     readonly kind = UCNodeKind.Expression;
 
-    constructor(readonly range: Range, protected valueToken?: Token) {
+    constructor(readonly range: Range, protected valueStr?: string) {
     }
 
     getSymbolAtPos(position: Position): ISymbol | undefined {
@@ -1321,14 +1321,14 @@ export class UCNoneLiteral extends UCLiteral {
 }
 
 export class UCStringLiteral extends UCLiteral {
-    declare valueToken: Token;
+    declare valueStr: string;
 
     override getType() {
         return StaticConstStringType;
     }
 
     override getValue() {
-        return `${this.valueToken.text!}[${this.valueToken.text!.length - 2}]`;
+        return `${this.valueStr}[${this.valueStr.length - 2}]`;
     }
 
     override toString() {
@@ -1355,14 +1355,14 @@ export class UCNameLiteral extends UCLiteral {
 }
 
 export class UCBoolLiteral extends UCLiteral {
-    declare valueToken: Token;
+    declare valueStr: string;
 
     override getType() {
         return StaticConstBoolType;
     }
 
     override getValue() {
-        return Boolean(this.valueToken.text!);
+        return Boolean(this.valueStr);
     }
 
     override toString() {
@@ -1371,26 +1371,26 @@ export class UCBoolLiteral extends UCLiteral {
 }
 
 export class UCFloatLiteral extends UCLiteral {
-    declare valueToken: Token;
+    declare valueStr: string;
 
     override getType() {
         return StaticConstFloatType;
     }
 
     override getValue(): number {
-        return Number.parseFloat(this.valueToken.text!);
+        return Number.parseFloat(this.valueStr);
     }
 }
 
 export class UCIntLiteral extends UCLiteral {
-    declare valueToken: Token;
+    declare valueStr: string;
 
     override getType() {
         return StaticConstIntType;
     }
 
     override getValue(): number {
-        return Number.parseInt(this.valueToken.text!);
+        return Number.parseInt(this.valueStr);
     }
 }
 
