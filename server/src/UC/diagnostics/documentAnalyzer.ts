@@ -38,6 +38,7 @@ import {
     UCStructSymbol,
     UCSymbolKind,
     UCTypeKind,
+    areClassNameIgnored,
     areDescendants,
     areIdentityMatch,
     areMethodsCompatible,
@@ -1339,6 +1340,14 @@ export class DocumentAnalyzer extends DefaultSymbolWalker<void> {
                             return name === NAME_EQUALEQUAL || name === NAME_NOTEQUAL;
                         }
 
+                        // ignored type match class name
+                        if (areClassNameIgnored(
+                            leftOperandType.getRef<UCStructSymbol>()!,
+                            rightOperandType.getRef<UCStructSymbol>()!
+                        )) {
+                            // do nothing
+                        }
+                        else
                         // Mute incompatible errors when comparing a struct using the intrinsic comparisons.
                         // TODO: Perhaps provide and index an intrinsic symbol for these cases.
                         if (leftOperandType.getTypeKind() === UCTypeKind.Struct &&
