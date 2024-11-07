@@ -23,6 +23,32 @@ export interface IFormatRule {
     Format(ctx: FormatContext, currentToken: Token): IFormatInfo[];
 }
 
+export class CodeScope {
+    public isInScope: boolean = false;
+    private braceCount: number = 0;
+
+    public StartScope() {
+        this.isInScope = true;
+        this.braceCount = 1;
+    }
+
+    public MarkOpenBrace() {
+        if (this.isInScope) {
+            this.braceCount++;
+        }
+    }
+
+    public MarkCloseBrace() {
+        if (this.isInScope) {
+            this.braceCount--;
+            if (this.braceCount <= 0) {
+                this.isInScope = false;
+            }
+        }
+    }
+
+}
+
 export class FormatContext {
     public indentLevel: number = 0;
 
@@ -34,8 +60,33 @@ export class FormatContext {
     readonly formatOption: FormattingOptions;
     readonly document: UCDocument;
 
-    public isInDefaultPropertiesScope: boolean = false;
-    public isInRepliactionScope: boolean = false;
+    //#region ctx Scope
+
+
+    public defaultPropertiesScope: CodeScope = new CodeScope();
+    public repliactionScope: CodeScope = new CodeScope();
+    public cppTextScope: CodeScope = new CodeScope();
+
+    private allScopes: CodeScope[] = []
+
+    public MarkOpenBrace() {
+        for (let index = 0; index < this.allScopes.length; index++) {
+            const scope = this.allScopes[index];
+            scope.MarkOpenBrace();
+        }
+    }
+
+    public MarkCloseBrace() {
+        for (let index = 0; index < this.allScopes.length; index++) {
+            const scope = this.allScopes[index];
+            scope.MarkCloseBrace();
+        }
+    }
+
+
+    //#endregion
+
+
 
     public tryGetPrevToken(currentToken: Token): Token | undefined {
         return this.tokens[currentToken.tokenIndex - 1];
@@ -49,8 +100,11 @@ export class FormatContext {
         this.document = document;
         this.tokens = tokens;
         this.indentLevel = 0;
-        this.isInDefaultPropertiesScope = false;
         this.formatOption = options;
+
+        this.allScopes = Object.entries(this)
+            .filter(entry => entry[0].toLowerCase().endsWith("scope") && entry[1] instanceof CodeScope)
+            .map(entry=>entry[1])
 
         this.indextString = this.formatOption.insertSpaces ?
             " ".repeat(this.formatOption.tabSize)
@@ -117,6 +171,11 @@ export class FormatContext {
         const tokens = this.getInLineTokensByLine(lineNumber);
         return tokens.map(t => t.text).join("");
     }
+
+
+
+
+
 }
 
 export async function getDocumentFormat(document: UCDocument, textDocId: TextDocumentIdentifier, options: FormattingOptions) {
@@ -160,10 +219,12 @@ export async function getDocumentFormat(document: UCDocument, textDocId: TextDoc
     for (let index = 0; index < tokens.length; index++) {
         const currentToken = tokens[index];
 
-        preProcessCtx(ctx, currentToken)
-        const results = formatRules.map(rule => rule.Format(ctx, currentToken))
-            .filter(r => r.length != 0).flat()
-        formatInfoArr.push(...results);
+
+        if (preProcessCtx(ctx, currentToken)) {
+            const results = formatRules.map(rule => rule.Format(ctx, currentToken))
+                .filter(r => r.length != 0).flat()
+            formatInfoArr.push(...results);
+        }
 
         postProcessCtx(ctx, currentToken);
     }
@@ -206,26 +267,36 @@ function buildRules(): IFormatRule[] {
     ]
 }
 
-function preProcessCtx(ctx: FormatContext, currentToken: Token,) {
-    // switch (currentToken.type) {
-    //     case UCParser.CLOSE_BRACE:
-    //         ctx.indentLevel--;
-    //         if (ctx.indentLevel === 0 && ctx.isInDefaultPropertiesScope) {
-    //             ctx.isInDefaultPropertiesScope = false;
-    //         }
-    //         break;
-    //     default:
-    //         break;
-    // }
-}
-
-function postProcessCtx(ctx: FormatContext, currentToken: Token,) {
+function preProcessCtx(ctx: FormatContext, currentToken: Token): boolean {
     switch (currentToken.type) {
         case UCParser.KW_DEFAULTPROPERTIES:
-            ctx.isInDefaultPropertiesScope = true;
+            ctx.defaultPropertiesScope.StartScope();
+            break;
+        case UCParser.KW_REPLICATION:
+            ctx.repliactionScope.StartScope();
+            break;
+        case UCParser.KW_CPPTEXT:
+            ctx.cppTextScope.StartScope();
             break;
         case UCParser.OPEN_BRACE:
-            // ctx.indentLevel++;
+            ctx.MarkOpenBrace();
+            break;
+        default:
+            break;
+    }
+
+    //ignore cpp text
+    if (ctx.cppTextScope.isInScope) {
+        return false;
+    }
+
+    return true;
+}
+
+function postProcessCtx(ctx: FormatContext, currentToken: Token) {
+    switch (currentToken.type) {
+        case UCParser.CLOSE_BRACE:
+            ctx.MarkCloseBrace();
             break;
         default:
             break;

@@ -158,7 +158,7 @@ export class LineIndentRule implements IFormatRule {
             }
         }
 
-        if (ctx.isInDefaultPropertiesScope && content instanceof UCArchetypeBlockStatement) {
+        if (ctx.defaultPropertiesScope.isInScope && content instanceof UCArchetypeBlockStatement) {
             // add indent for 'begin object' and 'end object'
             // this block is special
             // if we find all subcontents in it. 'UCArchetypeSymbol' and 'UCBlock' will be found.
@@ -171,7 +171,7 @@ export class LineIndentRule implements IFormatRule {
             }
         }
 
-        if (ctx.isInRepliactionScope && content instanceof UCRepIfStatement) {
+        if (ctx.repliactionScope.isInScope && content instanceof UCRepIfStatement) {
             // add indent for replication variables in different line
             if (option.positionInDoc.line > content.range.start.line) {
                 ctx.indentLevel++;
@@ -341,30 +341,30 @@ export class LineIndentRule implements IFormatRule {
 
 
     private setCtxIndentWrapper(ctx: FormatContext, content: IContent | undefined, option: ILineIndentOptions) {
-        if (!content) {
-            return
-        }
-        let symbolKind = UCSymbolKind.None;
-        if (isSymbol(content)) {
-            symbolKind = content.kind;
-        }
+        // if (!content) {
+        //     return
+        // }
+        // let symbolKind = UCSymbolKind.None;
+        // if (isSymbol(content)) {
+        //     symbolKind = content.kind;
+        // }
 
         //pre set warpper
-        switch (symbolKind) {
-            case UCSymbolKind.ReplicationBlock:
-                ctx.isInRepliactionScope = true;
-                break;
-        }
+        // switch (symbolKind) {
+        //     case UCSymbolKind.ReplicationBlock:
+        //         ctx.isInRepliactionScope = true;
+        //         break;
+        // }
 
         //set
         this.setCtxIndent(ctx, content, option);
 
         //post set warpper
-        switch (symbolKind) {
-            case UCSymbolKind.ReplicationBlock:
-                ctx.isInRepliactionScope = false;   //TODO: this is more like a line indent ctx scope, only can be used in this rule. can not share scope info to other rules.
-                break;
-        }
+        // switch (symbolKind) {
+        //     case UCSymbolKind.ReplicationBlock:
+        //         ctx.isInRepliactionScope = false;
+        //         break;
+        // }
     }
 
 }
