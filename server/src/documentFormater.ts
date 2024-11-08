@@ -66,6 +66,7 @@ export class FormatContext {
     public defaultPropertiesScope: CodeScope = new CodeScope();
     public repliactionScope: CodeScope = new CodeScope();
     public cppTextScope: CodeScope = new CodeScope();
+    public structCppTextScope: CodeScope = new CodeScope();
 
     private allScopes: CodeScope[] = []
 
@@ -104,7 +105,7 @@ export class FormatContext {
 
         this.allScopes = Object.entries(this)
             .filter(entry => entry[0].toLowerCase().endsWith("scope") && entry[1] instanceof CodeScope)
-            .map(entry=>entry[1])
+            .map(entry => entry[1])
 
         this.indextString = this.formatOption.insertSpaces ?
             " ".repeat(this.formatOption.tabSize)
@@ -278,6 +279,9 @@ function preProcessCtx(ctx: FormatContext, currentToken: Token): boolean {
         case UCParser.KW_CPPTEXT:
             ctx.cppTextScope.StartScope();
             break;
+        case UCParser.KW_STRUCTCPPTEXT:
+            ctx.structCppTextScope.StartScope();
+            break;
         case UCParser.OPEN_BRACE:
             ctx.MarkOpenBrace();
             break;
@@ -287,6 +291,11 @@ function preProcessCtx(ctx: FormatContext, currentToken: Token): boolean {
 
     //ignore cpp text
     if (ctx.cppTextScope.isInScope) {
+        return false;
+    }
+
+    //ignore struct cpp text
+    if (ctx.structCppTextScope.isInScope) {
         return false;
     }
 
