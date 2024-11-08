@@ -29,7 +29,7 @@ export class CodeScope {
 
     public StartScope() {
         this.isInScope = true;
-        this.braceCount = 1;
+        this.braceCount = 0;
     }
 
     public MarkOpenBrace() {
