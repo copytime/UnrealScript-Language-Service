@@ -100,7 +100,7 @@ export class OperatorSpaceRule implements IFormatRule {
     }
 
     getExpectedLength(ctx: FormatContext, currentToken: Token, isPrefixOperator: boolean, isRight: boolean): 0 | 1 {
-        if (ctx.isInDefaultPropertiesScope) {
+        if (ctx.defaultPropertiesScope.isInScope) {
             return 0;
         }
         if (currentToken.type == UCParser.DOLLAR    //$ string concat
