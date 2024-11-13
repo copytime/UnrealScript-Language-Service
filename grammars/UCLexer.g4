@@ -429,6 +429,49 @@ MACRO_SYMBOL
 	;
 
 
+MACRO_DECIMAL_LITERAL
+	:
+	(DIGIT+ '.' [0-9fF]* EXPONENT? FLOAT_TYPE_SUFFIX?
+	| DIGIT+ (FLOAT_TYPE_SUFFIX | EXPONENT FLOAT_TYPE_SUFFIX?)
+	)
+	-> channel(MACRO)
+	;
+
+MACRO_INTEGER_LITERAL
+	:
+	(DIGIT+ [xX] HEX_DIGIT+
+	| DIGIT+
+	)
+	-> channel(MACRO)
+	;
+
+MACRO_STRING_LITERAL: '"' (~["\\] | ESC_SEQ)* '"' -> channel(MACRO);
+MACRO_NAME_LITERAL: '\'' (~['\\] | ESC_SEQ)* '\'' -> channel(MACRO);
+MACRO_BOOLEAN_LITERAL:
+	('true' | 'false')
+	-> channel(MACRO)
+	;
+MACRO_NONE_LITERAL: 'none' -> channel(MACRO);
+
+
+MACRO_PLUS: '+'-> channel(MACRO);
+MACRO_MINUS: '-'-> channel(MACRO);
+MACRO_AT: '@'-> channel(MACRO);
+MACRO_DOLLAR: '$'-> channel(MACRO);
+MACRO_BANG: '!'-> channel(MACRO);
+MACRO_AMP: '&'-> channel(MACRO);
+MACRO_BITWISE_OR: '|'-> channel(MACRO);
+MACRO_STAR: '*'-> channel(MACRO);
+MACRO_CARET: '^'-> channel(MACRO);
+MACRO_DIV: '/'-> channel(MACRO);
+MACRO_MODULUS: '%'-> channel(MACRO);
+MACRO_INCR: '++'-> channel(MACRO);
+MACRO_DECR: '--'-> channel(MACRO);
+MACRO_EXP: '**'-> channel(MACRO);
+MACRO_RSHIFT: '>>'-> channel(MACRO);
+MACRO_LSHIFT: '<<'-> channel(MACRO);
+MACRO_SHIFT: '>>>'-> channel(MACRO);
+
 
 MACRO_NEW_LINE
 	: [\r\n]+

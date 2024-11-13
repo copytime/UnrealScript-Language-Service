@@ -44,7 +44,29 @@ callMacroArguments
 	;
 
 macroArgument
-	: arg=MACRO_SYMBOL
+	:
+	macroLiteral
+	| macroArgument MACRO_INCR
+	| macroArgument MACRO_DECR
+	| MACRO_INCR macroArgument
+	| MACRO_DECR macroArgument
+	| macroArgument MACRO_PLUS macroArgument
+	| MACRO_MINUS macroArgument
+	| macroArgument MACRO_MINUS macroArgument
+	| MACRO_BANG macroArgument
+	| macroArgument MACRO_MODULUS macroArgument
+	| macroArgument MACRO_DOLLAR macroArgument
+	| macroArgument MACRO_AT macroArgument
+	;
+
+macroLiteral
+	: MACRO_BOOLEAN_LITERAL
+	| MACRO_INTEGER_LITERAL
+	| MACRO_DECIMAL_LITERAL
+	| MACRO_STRING_LITERAL
+	| MACRO_NAME_LITERAL
+	| MACRO_NONE_LITERAL
+	| MACRO_SYMBOL
 	;
 
 macro returns[isActive: boolean, evaluatedTokens?: Token[]]
