@@ -5,7 +5,7 @@ options {
 }
 
 @parser::header {
-	interface IMacroSymbol {
+	export interface IMacroSymbol {
 		params?: string[];
 		text: string;
 	}
@@ -38,10 +38,17 @@ macroProgram returns[extraTokens?:Token[][]]
 	;
 macroStatement: MACRO_CHAR macro;
 
-callArguments: OPEN_PARENS (MACRO_SYMBOL (',' MACRO_SYMBOL)*)? CLOSE_PARENS;
+callMacroArguments
+	:
+	OPEN_PARENS (macroArgument (',' macroArgument)*)? CLOSE_PARENS
+	;
+
+macroArgument
+	: arg=MACRO_SYMBOL
+	;
 
 macro returns[isActive: boolean, evaluatedTokens?: Token[]]
-	: MACRO_DEFINE MACRO_SYMBOL (args=callArguments)? MACRO_TEXT?
+	: MACRO_DEFINE MACRO_SYMBOL (args=callMacroArguments)? MACRO_TEXT?
 	{
 		$isActive = this.getCurrentState();
 		if ($isActive) {
@@ -49,7 +56,12 @@ macro returns[isActive: boolean, evaluatedTokens?: Token[]]
 			const id = symbolToken && symbolToken.text;
 			if (id) {
 				let text = $MACRO_TEXT.text;
-				this.currentSymbols.set(id.toLowerCase(), { text: text || '...' });
+				let args = $ctx._args.macroArgument();
+				if (args){
+					this.currentSymbols.set(id.toLowerCase(), { text: text || '...',params:args.map(x=>x.text) });
+				}else{
+					this.currentSymbols.set(id.toLowerCase(), { text: text || '...' });
+				}
 			}
 		}
 	} # macroDefine
@@ -114,7 +126,7 @@ macro returns[isActive: boolean, evaluatedTokens?: Token[]]
 	} # macroCall
 	;
 
-macroExpression returns[value: boolean | string]
+macroExpression returns[value: boolean | string | IMacroSymbol]
 	: MACRO_IS_DEFINED (OPEN_PARENS MACRO_SYMBOL? CLOSE_PARENS)
 	{
 		var id = $MACRO_SYMBOL.text;
@@ -133,13 +145,13 @@ macroExpression returns[value: boolean | string]
 	{
 		$value = '"' + this.filePath + '"';
 	}
-	| MACRO_SYMBOL callArguments?
+	| MACRO_SYMBOL (args=callMacroArguments)?
 	{
 		var symbolToken = $MACRO_SYMBOL;
 		var id = symbolToken && symbolToken.text;
 		if (id) {
 			var macro = this.getSymbolValue(id.toLowerCase());
-			$value = macro ? macro.text : false;
+			$value = macro ? macro : false;
 		}
 		else $value = false;
 	}

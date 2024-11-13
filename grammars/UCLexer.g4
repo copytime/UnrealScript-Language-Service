@@ -11,6 +11,7 @@ channels { MACRO, COMMENTS_CHANNEL }
 	braceLevel: number = 0;
 	isDefineContext: boolean = false;
 	isIncludeContext: boolean = false;
+	isArgsContext: boolean = false;
 }
 
 fragment DIGIT
@@ -373,7 +374,14 @@ MACRO_OPEN_PARENS
 MACRO_CLOSE_PARENS
 	: ')'
 	{
-		-- this.parensLevel;
+		if(--this.parensLevel === 0){
+			if(this.isDefineContext && this.isArgsContext){
+				this.pushMode(UCLexer.MACRO_TEXT_MODE);
+			}
+			if(!this.isDefineContext && this.isArgsContext){
+				this.popMode();
+			}
+		}
 	}
 	-> channel(MACRO), type(CLOSE_PARENS)
 	;
@@ -401,15 +409,26 @@ MACRO_SYMBOL
 	: [a-zA-Z_][a-zA-Z0-9_#]*
 	{
 		if (this.parensLevel === 0 && this.braceLevel === 0) {
+			const la = this._input.LA(1);
+
 			if (this.isDefineContext) {
-				this.pushMode(UCLexer.MACRO_TEXT_MODE);
-			} else {
+				if (la !== '('.charCodeAt(0)) {
+					this.pushMode(UCLexer.MACRO_TEXT_MODE);
+				}else{
+					this.isArgsContext = true;
+				}
+			} else if(la === '('.charCodeAt(0)){
+				//do not popmode so we can get macro call args
+				this.isArgsContext = true;
+			}else {
 				this.popMode();
 			}
 		}
 	}
 	-> channel(MACRO)
 	;
+
+
 
 MACRO_NEW_LINE
 	: [\r\n]+
@@ -422,6 +441,19 @@ MACRO_NEW_LINE
 	;
 
 // MACRO_ERROR: . -> channel(HIDDEN);
+
+// mode MACRO_ARGS_MODE;
+
+// MACRO_ARGS
+// 	: MACRO_OPEN_PARENS (MACRO_SYMBOL (',' MACRO_SYMBOL)*)? MACRO_CLOSE_PARENS
+// 	{
+// 		this.popMode();
+// 		if (this.isDefineContext) {
+// 			this.pushMode(UCLexer.MACRO_TEXT_MODE);
+// 		}
+// 	}
+// 	-> channel(MACRO)
+// 	;
 
 mode MACRO_INCLUDE_MODE;
 
@@ -436,7 +468,7 @@ MACRO_INCLUDE_PATH
 mode MACRO_TEXT_MODE;
 
 MACRO_TEXT
-	: (~[\n]*? '\\' '\r'? '\n')* ~[\n]+
+	: (~[\r\n]*? '\\' '\r'? '\n')* ~[\r\n]+
 	-> channel(MACRO)
 	;
 

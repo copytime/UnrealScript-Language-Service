@@ -29,15 +29,42 @@ export class UCTokenStream extends CommonTokenStream {
                     // -- so that we don't have to repeat this step for each macro call.
                     let tokens = macroCtx.evaluatedTokens;
                     if (!tokens) {
-                        const value = macroCtx._expr.value.toString();
-                        if (value === '...') {
+                        const value = macroCtx._expr.value;
+                        if ( typeof value !== "object") {
+                            continue;
+                        }
+                        // const value = macroCtx._expr.value.toString();
+                        if (value.text === '...') {
                             // stumbled on an empty definition.
                             continue;
                         }
-                        const rawText = value.replace('\\', '');
+                        if (value.params) {
+                            //replace args
+                            const inputArgs = macroCtx._expr._args;
+                            if (inputArgs) {
+                                const inputArgStrs = inputArgs.macroArgument().map(x=>x.text);
+
+                                for (let index = 0; index < inputArgStrs.length; index++) {
+                                    const inputParam = inputArgStrs[index];
+                                    const formalParam = value.params[index] ?? "";
+                                    value.text = value.text.replaceAll(`\`${formalParam}`,inputParam);
+                                }
+
+                            }
+                        }
+                        const rawText = value.text.replace('\\', '');
                         const inputStream = UCInputStream.fromString(rawText);
                         rawLexer.inputStream = inputStream;
                         tokens = rawLexer.getAllTokens();
+                        tokens.forEach(t=>{
+                            if (t instanceof CommonToken) {
+                                t.line = macroCtx.start.line;
+                                Object.defineProperty(t,"isGeneratedToken",{
+                                    value:true,
+                                    writable:true,
+                                });
+                            }
+                        })
                         macroCtx.evaluatedTokens = tokens;
                     }
 
@@ -65,8 +92,7 @@ export class UCTokenStream extends CommonTokenStream {
                                 tokens.forEach(t=>{
                                     if (t instanceof CommonToken) {
                                         t.line = macroCtx.start.line;
-                                        // t.isIncludeToken = true;
-                                        Object.defineProperty(t,"isIncludeToken",{
+                                        Object.defineProperty(t,"isGeneratedToken",{
                                             value:true,
                                             writable:true,
                                         });

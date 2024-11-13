@@ -66,8 +66,8 @@ options {
         return false;
     }
 
-	isTokenFromInclude(token: (Token & { isIncludeToken?: boolean })) {
-		return token.isIncludeToken;
+	isTokenFromGenerated(token: (Token & { isGeneratedToken?: boolean })) {
+		return token.isGeneratedToken;
 	}
 }
 
@@ -268,7 +268,7 @@ directive
 
 program: member* | EOF;
 
-member returns[isFromInclude:boolean]
+member returns[isFromGenerated:boolean]
 	: classDecl
     | interfaceDecl
 	| constDecl
@@ -285,10 +285,10 @@ member returns[isFromInclude:boolean]
 	;
 	finally
 	{
-		$isFromInclude = false;
+		$isFromGenerated = false;
 		const lastToken = this._input.LT(-1);
-		if (lastToken && this.isTokenFromInclude(lastToken)) {
-			$isFromInclude = true;
+		if (lastToken && this.isTokenFromGenerated(lastToken)) {
+			$isFromGenerated = true;
 		}
 	}
 

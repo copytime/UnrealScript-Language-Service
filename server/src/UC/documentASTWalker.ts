@@ -327,6 +327,21 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
     declare(symbol: UCObjectSymbol, ctx?: ParserRuleContext, registerHash = false) {
         if (ctx) {
             symbol.description = fetchDeclarationComments(this.tokenStream!, ctx);
+
+            // add generated modifier
+            let memberCtx:ParserRuleContext|undefined = ctx;
+            while (memberCtx && !(memberCtx instanceof UCGrammar.MemberContext)) {
+                if (memberCtx._parent && memberCtx._parent instanceof ParserRuleContext) {
+                    memberCtx = memberCtx._parent;
+                }else{
+                    memberCtx = undefined;
+                }
+            }
+            if (memberCtx && memberCtx instanceof UCGrammar.MemberContext) {
+                if (memberCtx.isFromGenerated && symbol instanceof UCFieldSymbol) {
+                    symbol.modifiers |= ModifierFlags.Generated;
+                }
+            }
         }
 
         const scope = this.scope();
@@ -2042,7 +2057,8 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
 
     visitMember(ctx: UCGrammar.MemberContext){
         const res = this.visitChildren(ctx)
-        if (ctx.isFromInclude && res instanceof UCFieldSymbol) {
+        // add generated modifier
+        if (ctx.isFromGenerated && res instanceof UCFieldSymbol) {
             res.modifiers |= ModifierFlags.Generated;
         }
         return res;
