@@ -48,6 +48,7 @@ export class UCTokenStream extends CommonTokenStream {
                                     const inputParam = inputArgStrs[index];
                                     const formalParam = value.params[index] ?? "";
                                     value.text = value.text.replaceAll(`\`${formalParam}`,inputParam);
+                                    value.text = value.text.replaceAll(`\`{${formalParam}}`,inputParam);
                                 }
 
                             }
