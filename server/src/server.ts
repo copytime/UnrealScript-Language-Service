@@ -469,7 +469,7 @@ connection.onInitialized((params) => {
             }
         });
 
-    const globalsUCIFileName = toName('globals.uci');
+    const globalsUCIFileName = toName('globals');
     documentsSub = isIndexReady$
         .pipe(
             tap(value => {
