@@ -78,10 +78,19 @@ export class UCTokenStream extends CommonTokenStream {
                     let tokens = macroCtx.evaluatedTokens;
                     if (!tokens) {
                         if (macroCtx._path && macroCtx._path.text) {
-                            const filePath = macroCtx._path.text;
+                            let filePath = macroCtx._path.text;
+
                             const docFilePath = URI.parse(document.uri).fsPath;
 
-                            const docFileDir = path.dirname(docFilePath);
+                            let docFileDir = path.dirname(docFilePath);
+                            if (filePath.includes("\\")) {
+                                const rootKey = `development${path.sep}src`;
+                                const srcIndex = docFileDir.toLowerCase().indexOf(rootKey.toLowerCase())
+                                if (srcIndex > 0) {
+                                    docFileDir = docFileDir.substring(0,srcIndex+rootKey.length)
+                                    filePath = filePath.replaceAll("\\",path.sep);
+                                }
+                            }
                             const inculdeFilePath = path.join(docFileDir, filePath)
                             if (existsSync(inculdeFilePath)) {
                                 const codeStr = readTextByPath(inculdeFilePath);
