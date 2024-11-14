@@ -78,7 +78,7 @@ macro returns[isActive: boolean, evaluatedTokens?: Token[]]
 			const id = symbolToken && symbolToken.text;
 			if (id) {
 				let text = $MACRO_TEXT.text;
-				let args = $ctx._args.macroArgument();
+				let args = $ctx._args?.macroArgument();
 				if (args){
 					this.currentSymbols.set(id.toLowerCase(), { text: text || '...',params:args.map(x=>x.text) });
 				}else{
