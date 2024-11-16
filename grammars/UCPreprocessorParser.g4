@@ -57,6 +57,11 @@ macroArgument
 	| macroArgument MACRO_MODULUS macroArgument
 	| macroArgument MACRO_DOLLAR macroArgument
 	| macroArgument MACRO_AT macroArgument
+	| macroArgument MACRO_OPEN_BRACKET macroArgument
+	| macroArgument MACRO_CLOSE_BRACKET macroArgument?
+	| macroArgument MACRO_DOT macroArgument
+	| macroArgument MACRO_COLON macroArgument
+	| macroArgument MACRO_INTERR macroArgument
 	;
 
 macroLiteral

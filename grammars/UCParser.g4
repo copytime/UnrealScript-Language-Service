@@ -974,8 +974,8 @@ assignmentExpression
 	;
 
 primaryExpression
-	: primaryExpression '.' classPropertyAccessSpecifier '.' identifier						#propertyClassAccessExpression
-	| primaryExpression '.' identifier?												        #propertyAccessExpression
+	: primaryExpression DOT classPropertyAccessSpecifier DOT identifier						#propertyClassAccessExpression
+	| primaryExpression DOT identifier?												        #propertyAccessExpression
 	| primaryExpression (OPEN_PARENS arguments? CLOSE_PARENS) 								#callExpression
 	| primaryExpression (OPEN_BRACKET arg=expression? CLOSE_BRACKET) 						#elementAccessExpression
 

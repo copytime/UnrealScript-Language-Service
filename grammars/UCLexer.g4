@@ -472,9 +472,16 @@ MACRO_RSHIFT: '>>'-> channel(MACRO);
 MACRO_LSHIFT: '<<'-> channel(MACRO);
 MACRO_SHIFT: '>>>'-> channel(MACRO);
 
+MACRO_OPEN_BRACKET: '[' -> channel(MACRO);
+MACRO_CLOSE_BRACKET: ']' -> channel(MACRO);
+MACRO_DOT: '.' -> channel(MACRO);
+
+MACRO_COLON: ':' -> channel(MACRO);
+MACRO_INTERR: '?' -> channel(MACRO);
 
 MACRO_OR: '||' -> channel(MACRO);
 MACRO_AND: '&&' -> channel(MACRO);
+
 
 MACRO_NEW_LINE
 	: [\r\n]+
@@ -504,7 +511,7 @@ MACRO_NEW_LINE
 mode MACRO_INCLUDE_MODE;
 
 MACRO_INCLUDE_PATH
-	: ~(')'|'\r'|'\n'|'\t')*
+	: ~(')'|'\r'|'\n'|'\t')+
 	{
 		this.isIncludeContext = false;
 	}
