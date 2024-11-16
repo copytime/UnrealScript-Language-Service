@@ -14,7 +14,7 @@ options {
 @parser::members {
 	static globalSymbols = new Map<string, IMacroSymbol>();
 
-	currentState: boolean[] = [true];
+	currentState: boolean[] = [];
 	currentSymbols = new Map<string, IMacroSymbol>();
 
 	filePath: string;
@@ -112,7 +112,9 @@ macro returns[isActive: boolean, evaluatedTokens?: Token[]]
 	;
 
 macroExpression returns[value: boolean | string | IMacroSymbol]
-	: MACRO_IS_DEFINED (OPEN_PARENS MACRO_SYMBOL? CLOSE_PARENS)
+	: left=macroExpression op=MACRO_AND right=macroExpression # macroConditionExpr
+	| left=macroExpression op=MACRO_OR right=macroExpression # macroConditionExpr
+	|MACRO_IS_DEFINED (OPEN_PARENS MACRO_SYMBOL? CLOSE_PARENS)
 	{
 		var id = $MACRO_SYMBOL.text;
 	} # macroIsDefinedExpr

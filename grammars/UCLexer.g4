@@ -473,6 +473,9 @@ MACRO_LSHIFT: '<<'-> channel(MACRO);
 MACRO_SHIFT: '>>>'-> channel(MACRO);
 
 
+MACRO_OR: '||' -> channel(MACRO);
+MACRO_AND: '&&' -> channel(MACRO);
+
 MACRO_NEW_LINE
 	: [\r\n]+
 	{

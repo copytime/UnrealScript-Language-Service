@@ -1,5 +1,5 @@
 import path from 'path';
-import { MacroCallContext, MacroDefineContext, MacroElseContext, MacroElseIfContext, MacroEndIfContext, MacroExprContext, MacroIfContext, MacroIncludeContext, MacroIsDefinedExprContext, MacroNotDefinedExprContext, MacroUndefineContext, UCPreprocessorParser } from 'UC/antlr/generated/UCPreprocessorParser';
+import { IMacroSymbol, MacroCallContext, MacroConditionExprContext, MacroDefineContext, MacroElseContext, MacroElseIfContext, MacroEndIfContext, MacroExprContext, MacroExpressionContext, MacroFileExprContext, MacroIfContext, MacroIncludeContext, MacroIsDefinedExprContext, MacroLineExprContext, MacroNotDefinedExprContext, MacroUndefineContext, UCPreprocessorParser } from 'UC/antlr/generated/UCPreprocessorParser';
 import { UCDocument } from 'UC/document';
 import { applyMacroSymbols, config } from 'UC/indexer';
 import { EvaluatedTokens, UCTokenStream } from './TokenStream';
@@ -60,7 +60,7 @@ export function FillEvaluatedTokens(document: UCDocument, macroParser: UCPreproc
                 }
             }
             if (macroCtx instanceof MacroIfContext) {
-                const isActive = !!macroCtx._expr.value && macroParser.getCurrentState();
+                const isActive = !!evalMacroExpr(macroParser,macroCtx._expr) && macroParser.getCurrentState();
                 macroParser.currentState.push(isActive);
 
                 const macroChar = smNode.MACRO_CHAR();
@@ -73,7 +73,7 @@ export function FillEvaluatedTokens(document: UCDocument, macroParser: UCPreproc
                     macroParser.currentState.push(false);
                     isActive = false;
                 }else{
-                    const ctxActive = !!macroCtx._expr.value;
+                    const ctxActive = !!evalMacroExpr(macroParser,macroCtx._expr);
                     macroParser.currentState.pop();
                     macroParser.currentState.push(ctxActive);
                     isActive = ctxActive && macroParser.getCurrentState();
@@ -213,20 +213,6 @@ export function FillEvaluatedTokens(document: UCDocument, macroParser: UCPreproc
                     evaluatedTokens.set(macroChar.symbol.startIndex, tokens as WritableToken[]);
                 }
             }
-
-            // -----------------
-            // macro expr
-            // -----------------
-            if (macroCtx instanceof MacroIsDefinedExprContext) {
-                const macroSymbol = macroCtx._MACRO_SYMBOL;
-                const id = macroSymbol?.text;
-                macroCtx.value = id ? Boolean(macroParser.getSymbolValue(id.toLowerCase())) : false;
-            }
-            if (macroCtx instanceof MacroNotDefinedExprContext) {
-                const macroSymbol = macroCtx._MACRO_SYMBOL;
-                const id = macroSymbol?.text;
-                macroCtx.value = id ? !Boolean(macroParser.getSymbolValue(id.toLowerCase())) : true;
-            }
         }
     }
 
@@ -239,4 +225,40 @@ export function FillEvaluatedTokens(document: UCDocument, macroParser: UCPreproc
         applyMacroSymbols(config.macroSymbols);
     }
 
+}
+
+function evalMacroExpr(macroParser:UCPreprocessorParser,expr:MacroExpressionContext) : boolean|string|IMacroSymbol|undefined {
+    if (expr instanceof MacroConditionExprContext) {
+        const leftVal = evalMacroExpr(macroParser,expr._left);
+        const rightVal = evalMacroExpr(macroParser,expr._right);
+        const operator = expr._op;
+        if (operator.type === UCPreprocessorParser.MACRO_OR) {
+            return Boolean(leftVal) || Boolean(rightVal);
+        }
+        if (operator.type === UCPreprocessorParser.MACRO_AND) {
+            return Boolean(leftVal) && Boolean(rightVal);
+        }
+    }
+    if (expr instanceof MacroIsDefinedExprContext) {
+        const macroSymbol = expr._MACRO_SYMBOL;
+        const id = macroSymbol?.text;
+        return id ? Boolean(macroParser.getSymbolValue(id.toLowerCase())) : false;
+    }
+    if (expr instanceof MacroNotDefinedExprContext) {
+        const macroSymbol = expr._MACRO_SYMBOL;
+        const id = macroSymbol?.text;
+        return id ? !Boolean(macroParser.getSymbolValue(id.toLowerCase())) : true;
+    }
+    if (expr instanceof MacroLineExprContext) {
+        return expr.value;
+    }
+    if (expr instanceof MacroFileExprContext) {
+        return expr.value;
+    }
+    if (expr instanceof MacroExprContext) {
+        const macroSymbol = expr._MACRO_SYMBOL;
+        const id = macroSymbol?.text ?? "";
+        return macroParser.getSymbolValue(id.toLowerCase());
+    }
+    return undefined;
 }
