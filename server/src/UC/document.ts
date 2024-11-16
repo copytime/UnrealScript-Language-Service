@@ -128,10 +128,7 @@ export class UCDocument {
             lexer.reset();
             if (macroParser) {
                 try {
-                    const macroTree = preprocessDocument(this, macroParser);
-                    if (macroTree) {
-                        tokens.initMacroTree(this,macroTree);
-                    }
+                    tokens.initMacroTree(this,macroParser);
                 } catch (err) {
                     console.error(err);
                 } finally {
@@ -190,10 +187,7 @@ export class UCDocument {
             lexer.reset();
             if (macroParser) {
                 try {
-                    const macroTree = preprocessDocument(this, macroParser, walker);
-                    if (macroTree) {
-                        tokenStream.initMacroTree(this,macroTree, errorListener);
-                    }
+                    tokenStream.initMacroTree(this,macroParser,errorListener);
                 } catch (err) {
                     console.error(err);
                 } finally {
@@ -320,25 +314,6 @@ export function createPreprocessor(document: UCDocument, lexer: UCLexer) {
 }
 
 export function preprocessDocument(document: UCDocument, macroParser: UCPreprocessorParser, walker?: DocumentASTWalker) {
-    if (document.fileName.toLowerCase() === 'globals.uci') {
-        UCPreprocessorParser.globalSymbols = macroParser.currentSymbols;
-        applyMacroSymbols(config.macroSymbols);
-    }
-
-    // Cannot use document.Name, because we need to preserve lowercases and uppercases
-    const classNameMacro = { text: path.basename(document.fileName, path.extname(document.fileName)) };
-    macroParser.currentSymbols.set("classname", classNameMacro);
-
-    const packageNameMacro = { text: document.classPackage.getName().text };
-    macroParser.currentSymbols.set("packagename", packageNameMacro);
-
-    if (walker) {
-        const errorListener = new UCErrorListener();
-        macroParser.removeErrorListeners(); macroParser.addErrorListener(errorListener);
-    }
     const macroCtx = macroParser.macroProgram();
-    if (walker) {
-        walker.visit(macroCtx);
-    }
     return macroCtx;
 }

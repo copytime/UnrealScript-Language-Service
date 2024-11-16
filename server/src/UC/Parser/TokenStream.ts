@@ -1,127 +1,24 @@
 import { ANTLRErrorListener, BufferedTokenStream, CommonToken, CommonTokenStream, Token, WritableToken } from 'antlr4ts';
 
 import { UCLexer } from '../antlr/generated/UCLexer';
-import { MacroCallContext, MacroIncludeContext, MacroProgramContext } from '../antlr/generated/UCPreprocessorParser';
+import { MacroCallContext, MacroIncludeContext, MacroProgramContext, UCPreprocessorParser } from '../antlr/generated/UCPreprocessorParser';
 import { UCInputStream } from './InputStream';
 import { URI } from 'vscode-uri';
 import { UCDocument } from 'UC/document';
 import path from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { readTextByPath } from 'workspace';
+import { FillEvaluatedTokens } from './MacroProcessor';
 
 const DEFAULT_INPUT = UCInputStream.fromString('');
 
+export type EvaluatedTokens = Map<number, WritableToken[]|{activeControl:boolean}>;
+
 export class UCTokenStream extends CommonTokenStream {
-    readonly evaluatedTokens = new Map<number, WritableToken[]>();
+    readonly evaluatedTokens:EvaluatedTokens = new Map<number, WritableToken[]|{activeControl:boolean}>();
 
-    initMacroTree(document: UCDocument, macroTree: MacroProgramContext, errListener?: ANTLRErrorListener<number>) {
-        const smNodes = macroTree.macroStatement();
-        if (smNodes) {
-            const rawLexer = new UCLexer(DEFAULT_INPUT);
-            if (errListener) {
-                rawLexer.removeErrorListeners(); rawLexer.addErrorListener(errListener);
-            }
-
-            for (const smNode of smNodes) {
-                const macroCtx = smNode.macro();
-                if (macroCtx.isActive && macroCtx instanceof MacroCallContext) {
-                    // TODO: Cache the evaluated tokens from within the `define context itself,
-                    // -- so that we don't have to repeat this step for each macro call.
-                    let tokens = macroCtx.evaluatedTokens;
-                    if (!tokens) {
-                        const value = macroCtx._expr.value;
-                        if ( typeof value !== "object") {
-                            continue;
-                        }
-                        // const value = macroCtx._expr.value.toString();
-                        if (value.text === '...') {
-                            // stumbled on an empty definition.
-                            continue;
-                        }
-                        if (value.params) {
-                            //replace args
-                            const inputArgs = macroCtx._expr._args;
-                            if (inputArgs) {
-                                const inputArgStrs = inputArgs.macroArgument().map(x=>x.text);
-
-                                for (let index = 0; index < inputArgStrs.length; index++) {
-                                    const inputParam = inputArgStrs[index];
-                                    const formalParam = value.params[index] ?? "";
-                                    value.text = value.text.replaceAll(`\`${formalParam}`,inputParam);
-                                    value.text = value.text.replaceAll(`\`{${formalParam}}`,inputParam);
-                                }
-
-                            }
-                        }
-                        const rawText = value.text.replace('\\', '');
-                        const inputStream = UCInputStream.fromString(rawText);
-                        rawLexer.inputStream = inputStream;
-                        tokens = rawLexer.getAllTokens();
-                        tokens.forEach(t=>{
-                            if (t instanceof CommonToken) {
-                                t.line = macroCtx.start.line;
-                                Object.defineProperty(t,"isGeneratedToken",{
-                                    value:true,
-                                    writable:true,
-                                });
-                            }
-                        })
-                        macroCtx.evaluatedTokens = tokens;
-                    }
-
-                    if (tokens) {
-                        const token = smNode.MACRO_CHAR();
-                        this.evaluatedTokens.set(token.symbol.startIndex, tokens as WritableToken[]);
-                    }
-                }
-                if (macroCtx.isActive && macroCtx instanceof MacroIncludeContext) {
-                    let tokens = macroCtx.evaluatedTokens;
-                    if (!tokens) {
-                        if (macroCtx._path && macroCtx._path.text) {
-                            let filePath = macroCtx._path.text;
-
-                            const docFilePath = URI.parse(document.uri).fsPath;
-
-                            let docFileDir = path.dirname(docFilePath);
-                            if (filePath.includes("\\")) {
-                                const rootKey = `development${path.sep}src`;
-                                const srcIndex = docFileDir.toLowerCase().indexOf(rootKey.toLowerCase())
-                                if (srcIndex > 0) {
-                                    docFileDir = docFileDir.substring(0,srcIndex+rootKey.length)
-                                    filePath = filePath.replaceAll("\\",path.sep);
-                                }
-                            }
-                            const inculdeFilePath = path.join(docFileDir, filePath)
-                            if (existsSync(inculdeFilePath)) {
-                                const codeStr = readTextByPath(inculdeFilePath);
-                                const rawText = codeStr.replace('\\', '');
-                                const inputStream = UCInputStream.fromString(rawText);
-
-                                rawLexer.inputStream = inputStream;
-                                tokens = rawLexer.getAllTokens();
-                                tokens.forEach(t=>{
-                                    if (t instanceof CommonToken) {
-                                        t.line = macroCtx.start.line;
-                                        Object.defineProperty(t,"isGeneratedToken",{
-                                            value:true,
-                                            writable:true,
-                                        });
-
-                                    }
-                                })
-                                macroCtx.evaluatedTokens = tokens;
-                            }
-                        }
-                    }
-
-                    if (tokens) {
-                        const token = smNode.MACRO_CHAR();
-                        this.evaluatedTokens.set(token.symbol.startIndex, tokens as WritableToken[]);
-                    }
-
-                }
-            }
-        }
+    initMacroTree(document: UCDocument,macroParser: UCPreprocessorParser, errListener?: ANTLRErrorListener<number>) {
+        FillEvaluatedTokens(document,macroParser,this.evaluatedTokens,errListener);
     }
 
     override fetch(n: number) {
@@ -135,7 +32,7 @@ export class UCTokenStream extends CommonTokenStream {
             // if so, insert a token references to the evaluated tokens that are part of a "`define" text block.
             if (token.type === UCLexer.MACRO_CHAR) {
                 const macroTokens = this.evaluatedTokens.get(token.startIndex);
-                if (macroTokens) {
+                if (macroTokens && Array.isArray(macroTokens)) {
                     const baseline = macroTokens[0].line;
                     const basechar = macroTokens[0].charPositionInLine;
                     for (let j = 0; j < macroTokens.length; ++j) {
