@@ -14,12 +14,20 @@ const DEFAULT_INPUT = UCInputStream.fromString('');
 
 export type EvaluatedTokens = Map<number, WritableToken[]|{activeControl:boolean}>;
 
+function isControlMacro(evaluated:{activeControl?:boolean}) : evaluated is {activeControl:boolean} {
+    return typeof evaluated.activeControl === "boolean";
+}
+
 export class UCTokenStream extends CommonTokenStream {
     readonly evaluatedTokens:EvaluatedTokens = new Map<number, WritableToken[]|{activeControl:boolean}>();
 
     initMacroTree(document: UCDocument,macroParser: UCPreprocessorParser, errListener?: ANTLRErrorListener<number>) {
         FillEvaluatedTokens(document,macroParser,this.evaluatedTokens,errListener);
     }
+
+    isTokenMacroActive:boolean = true;
+
+
 
     override fetch(n: number) {
         if (this.fetchedEOF) {
@@ -32,7 +40,7 @@ export class UCTokenStream extends CommonTokenStream {
             // if so, insert a token references to the evaluated tokens that are part of a "`define" text block.
             if (token.type === UCLexer.MACRO_CHAR) {
                 const macroTokens = this.evaluatedTokens.get(token.startIndex);
-                if (macroTokens && Array.isArray(macroTokens)) {
+                if (macroTokens && Array.isArray(macroTokens) && this.isTokenMacroActive) {
                     const baseline = macroTokens[0].line;
                     const basechar = macroTokens[0].charPositionInLine;
                     for (let j = 0; j < macroTokens.length; ++j) {
@@ -44,10 +52,18 @@ export class UCTokenStream extends CommonTokenStream {
                     this.tokens.push(...macroTokens);
                     n += macroTokens.length;
                 }
+                if (macroTokens && !Array.isArray(macroTokens) && isControlMacro(macroTokens)) {
+                    this.isTokenMacroActive = macroTokens.activeControl;
+                }
             }
 
-            token.tokenIndex = this.tokens.length;
-            this.tokens.push(token);
+            if (this.isTokenMacroActive) {
+                token.tokenIndex = this.tokens.length;
+                this.tokens.push(token);
+            }else{
+                n++;
+            }
+
 
             if (token.type === Token.EOF) {
                 this.fetchedEOF = true;
