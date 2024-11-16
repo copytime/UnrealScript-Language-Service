@@ -10,7 +10,6 @@ uuid: 620e5cd2-939d-42b8-9943-4927e876320f
 patterns:
   - include: '#comment'
   - include: '#preprocessor'
-  - include: '#unrealscript'
 
 repository:
   comment:
@@ -174,8 +173,3 @@ repository:
       - match: \,
         name: punctuation.comma.upp
     end: \)
-
-  unrealscript:
-    name: meta.embedded.block.unrealscript.upp
-    patterns:
-      - include: source.uc

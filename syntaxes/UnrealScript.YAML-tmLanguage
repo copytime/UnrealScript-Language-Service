@@ -11,6 +11,7 @@ foldingStartMarker: \{\s*$
 foldingStopMarker: ^\s*\}
 
 patterns:
+  - include: '#unrealscript-pp'
   - include: '#comment'
   - include: '#declarations'
 
@@ -659,6 +660,7 @@ repository:
           '0':
             name: punctuation.definition.block.uc
         patterns:
+          - include: 'unrealscript-pp'
           - include: '#comment'
           - match: \w+
             name: variable.other.enummember.uc
@@ -716,6 +718,7 @@ repository:
           '0':
             name: punctuation.definition.block.uc
         patterns:
+          - include: '#unrealscript-pp'
           - include: '#comment'
           - include: '#type-declarations'
           - include: '#structcpptext-block'
@@ -905,6 +908,7 @@ repository:
           '0':
             name: punctuation.curlybrace.open.uc
         patterns:
+          - include: '#unrealscript-pp'
           - include: '#local-declaration'
           - include: '#statement'
         end: \}
@@ -1015,6 +1019,7 @@ repository:
           '0':
             name: punctuation.definition.block.uc
         patterns:
+          - include: '#unrealscript-pp'
           - include: '#comment'
           - include: '#const-declaration'
           - include: '#local-declaration'
@@ -1095,6 +1100,7 @@ repository:
           '0':
             name: punctuation.curlybrace.open.uc
         patterns:
+          - include: '#unrealscript-pp'
           - include: '#comment'
 
           - begin: (?:\b((?i)unreliable|reliable)\b(?:\s+((?i)always)\b)?)?\s*\b((?i)if)\b
@@ -1158,6 +1164,7 @@ repository:
               '0':
                 name: punctuation.curlybrace.open.uc
             patterns:
+              - include: '#unrealscript-pp'
               - include: '#switch-statement'
             end: \}
             endCaptures:
@@ -1200,6 +1207,7 @@ repository:
           '0':
             name: punctuation.curlybrace.open.uc
         patterns:
+          - include: '#unrealscript-pp'
           - include: '#statement'
         end: \}
         endCaptures:
@@ -1431,6 +1439,7 @@ repository:
           '0':
             name: punctuation.curlybrace.open.uc
         patterns:
+          - include: '#unrealscript-pp'
           - include: '#expression'
         end: \}
         endCaptures:
@@ -1456,6 +1465,7 @@ repository:
           '0':
             name: punctuation.curlybrace.open.uc
         patterns:
+          - include: '#unrealscript-pp'
           - include: '#propertiesBlock'
         end: \}
         endCaptures:
@@ -1477,9 +1487,16 @@ repository:
           '0':
             name: punctuation.curlybrace.open.uc
         patterns:
+          - include: '#unrealscript-pp'
           - include: '#propertiesBlock'
         end: \}
         endCaptures:
           '0':
             name: punctuation.curlybrace.close.uc
     end: (?<=\})
+
+  unrealscript-pp:
+    name: meta.embedded.block.upp.uc
+    patterns:
+      - include: source.upp
+

@@ -270,6 +270,11 @@
         "grammars": [
             {
                 "language": "unrealscript",
+                "scopeName": "source.upp",
+                "path": "./out/unrealscript.preprocessor.tmLanguage.json"
+            },
+            {
+                "language": "unrealscript",
                 "scopeName": "source.uc",
                 "path": "./out/unrealscript.tmLanguage.json",
                 "embeddedLanguages": {
@@ -278,18 +283,23 @@
                 }
             },
             {
-                "language": "unrealscript",
-                "scopeName": "source.upp",
-                "path": "./out/unrealscript.preprocessor.tmLanguage.json"
-            },
-            {
                 "language": "unrealscript-pp",
                 "scopeName": "source.upp",
                 "path": "./out/unrealscript.preprocessor.tmLanguage.json",
                 "embeddedLanguages": {
                     "meta.embedded.block.unrealscript.upp": "unrealscript"
                 }
+            },
+            {
+                "language": "unrealscript-pp",
+                "scopeName": "source.uc",
+                "path": "./out/unrealscript.tmLanguage.json",
+                "embeddedLanguages": {
+                    "meta.embedded.block.cpp.uc": "cpp",
+                    "meta.embedded.block.upp.uc": "unrealscript-pp"
+                }
             }
+
         ],
         "codeActions": [
             {
