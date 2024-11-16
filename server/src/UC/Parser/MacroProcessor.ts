@@ -180,6 +180,7 @@ export function FillEvaluatedTokens(document: UCDocument, macroParser: UCPreproc
                         // stumbled on an empty definition.
                         continue;
                     }
+                    let rawText = value.text;
                     if (value.params) {
                         //replace args
                         const inputArgs = (macroCtx._expr as MacroExprContext)._args;
@@ -189,13 +190,13 @@ export function FillEvaluatedTokens(document: UCDocument, macroParser: UCPreproc
                             for (let index = 0; index < inputArgStrs.length; index++) {
                                 const inputParam = inputArgStrs[index];
                                 const formalParam = value.params[index] ?? "";
-                                value.text = value.text.replaceAll(`\`${formalParam}`,inputParam);
-                                value.text = value.text.replaceAll(`\`{${formalParam}}`,inputParam);
+                                rawText = rawText.replaceAll(`\`${formalParam}`,inputParam);
+                                rawText = rawText.replaceAll(`\`{${formalParam}}`,inputParam);
                             }
 
                         }
                     }
-                    const rawText = value.text.replace('\\', '');
+                    rawText = rawText.replace('\\', '');
                     const inputStream = UCInputStream.fromString(rawText);
                     rawLexer.inputStream = inputStream;
                     const tokens = rawLexer.getAllTokens();
