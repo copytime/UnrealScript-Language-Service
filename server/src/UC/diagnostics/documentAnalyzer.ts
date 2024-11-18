@@ -1837,9 +1837,8 @@ export class DocumentAnalyzer extends DefaultSymbolWalker<void> {
             if (symbol.params[requiredParamsCount].hasAnyModifierFlags(ModifierFlags.Optional)) {
                 break;
             }
-
-            symbol.requiredParamsCount = requiredParamsCount;
         }
+        symbol.requiredParamsCount = requiredParamsCount;
 
         // When we have more params than required, we'll catch an unexpected argument error, see above.
         if (requiredParamsCount && passedArgumentsCount < requiredParamsCount) {
