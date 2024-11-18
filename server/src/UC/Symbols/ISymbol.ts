@@ -4,6 +4,7 @@ import { typeKindToDisplayString } from '../diagnostics/diagnostic';
 import { Name } from '../name';
 import { SymbolWalker } from '../symbolWalker';
 import { ITypeSymbol, UCNodeKind, UCSymbolKind, UCTypeKind } from './';
+import { IExpression } from 'UC/expressions';
 
 export type Identifier = Readonly<{
     readonly name: Name;
@@ -65,6 +66,7 @@ export type ContextInfo = {
     contextType?: ITypeSymbol;
     inAssignment?: boolean;
     isQualified?: boolean;
+    callParameters?: IExpression[];
 };
 
 export enum SymbolReferenceFlags {

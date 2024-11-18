@@ -43,6 +43,7 @@ import {
     UCClassSymbol,
     UCDelegateSymbol,
     UCEnumSymbol,
+    UCFieldSymbol,
     UCMethodSymbol,
     UCNodeKind,
     UCObjectSymbol,
@@ -407,7 +408,7 @@ export class UCCallExpression extends UCExpression {
 
         // Could still be a valid function call, so fallback to the default indexing behavior.
         if (typeof type === 'undefined') {
-            this.expression.index(document, context);
+            this.expression.index(document, context, {callParameters:this.arguments});
         }
 
         const methodType = this.expression.getType();
@@ -789,10 +790,24 @@ export class UCMemberExpression extends UCExpression {
             }
         }
 
+        let member: false | UCFieldSymbol | undefined = false;
+        // 'Array.Find' has two versions. Find the correct one using parameters count for now.
+        const memberArr = isStruct(context) && context.findSuperSymbols(id);
+        if (memberArr) {
+            if (info && info.callParameters) {
+                member = memberArr.filter(x => x instanceof UCMethodSymbol)
+                    .find(x=>x.params && x.params.length === info.callParameters?.length);
+            }else{
+                member = memberArr[0];
+            }
+        }
+        if (!member) {
+            member = isStruct(context) && context.findSuperSymbol(id);
+        }
         // findSuperSymbol() here also picks up enum tags, thus we don't have to check for a contextTypeKind
         // Note: The UnrealScript compiles this as an integer literal, but as a byte if an enum context was given.
         // We treat both scenarios as a byte.
-        let member = isStruct(context) && context.findSuperSymbol(id);
+        // let member = isStruct(context) && context.findSuperSymbol(id);
         if (!member) {
             // Look for a context-less enum tag reference, e.g. (myLocalByte === ET_EnumTag)
             // Follow the compilers behavior:

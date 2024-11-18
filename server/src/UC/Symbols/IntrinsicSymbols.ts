@@ -93,7 +93,7 @@ const Array_FindMemberFunction = new UCMethodSymbol({ name: toName('Find'), rang
 Array_FindMemberFunction.modifiers |= ModifierFlags.Intrinsic | ModifierFlags.ReadOnly;
 const ItemParam6 = new UCParamSymbol({ name: toName('PropertyName'), range: DEFAULT_RANGE }, DEFAULT_RANGE, StaticNameType);
 Array_FindMemberFunction.addSymbol(ItemParam6);
-const ItemParam7 = new UCParamSymbol({ name: toName('Value'), range: DEFAULT_RANGE }, DEFAULT_RANGE, StaticNameType);
+const ItemParam7 = new UCParamSymbol({ name: toName('Value'), range: DEFAULT_RANGE }, DEFAULT_RANGE, StaticMetaType);
 Array_FindMemberFunction.addSymbol(ItemParam7);
 Array_FindMemberFunction.params = [ItemParam6, ItemParam7];
 IntrinsicArray.addSymbol(Array_FindMemberFunction);

@@ -164,6 +164,18 @@ export class UCStructSymbol extends UCFieldSymbol implements ISymbolContainer<UC
 		return undefined;
 	}
 
+    getSymbols<T extends UCFieldSymbol>(id: Name, kind?: UCSymbolKind): T[] {
+        const resArr:T[] = []
+		for (let child = this.children; child; child = child.next) {
+			if (child.id.name === id) {
+				if (kind !== undefined && child.kind !== kind) {
+					break;
+				}
+                resArr.push(child as T);
+			}
+		}
+		return resArr;
+	}
 
 	findSuperSymbol<T extends UCFieldSymbol>(id: Name, kind?: UCSymbolKind): T | undefined {
 		return this.getSymbol<T>(id, kind) ?? this.super?.findSuperSymbol(id, kind);
@@ -171,6 +183,11 @@ export class UCStructSymbol extends UCFieldSymbol implements ISymbolContainer<UC
 
     findSuperSymbolPredicate<T extends UCFieldSymbol>(predicate: (symbol: UCFieldSymbol) => boolean): T | undefined {
 		return this.findSymbolPredicate<T>(predicate) ?? this.super?.findSymbolPredicate(predicate);
+	}
+
+    findSuperSymbols<T extends UCFieldSymbol>(id: Name, kind?: UCSymbolKind): T[] {
+        const symbolArr = this.getSymbols<T>(id, kind);
+		return symbolArr.length > 0 ? symbolArr : this.super?.findSuperSymbols(id, kind) ?? [];
 	}
 
 	override index(document: UCDocument, context: UCStructSymbol) {
