@@ -77,8 +77,8 @@ INTEGER_LITERAL
 	| DIGIT+
 	;
 
-STRING_LITERAL: '"' (~["\\] | ESC_SEQ)* '"';
-NAME_LITERAL: '\'' (~['\\] | ESC_SEQ)* '\'';
+STRING_LITERAL: '"' (~["])* '"';
+NAME_LITERAL: '\'' (~['\n\\])* '\'';
 BOOLEAN_LITERAL: 'true' | 'false';
 NONE_LITERAL: 'none';
 
