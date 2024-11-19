@@ -999,8 +999,8 @@ export function typesMatch(
 
     // ignored type match class name
     if (areClassNameIgnored(
-        destType.getRef<UCStructSymbol>()!,
-        inputType.getRef<UCStructSymbol>()!
+        destType,
+        inputType
     )) {
         return TypeMatchReport.Compatible;
     }
@@ -1221,7 +1221,7 @@ export function hasDefinedSuper(
 
 
 
-export function areClassNameIgnored(parentSymbol: SuperSymbol, derivedSymbol: SuperSymbol):boolean{
+export function areClassNameIgnored(parentSymbol: ITypeSymbol, derivedSymbol: ITypeSymbol):boolean{
 
     if (!parentSymbol || !derivedSymbol) {
         return false;
@@ -1231,16 +1231,20 @@ export function areClassNameIgnored(parentSymbol: SuperSymbol, derivedSymbol: Su
         return false;
     }
 
-    const sameTypeSet = config.ignoreTypeMatchClassNameMap.get(parentSymbol.id.name.hash);
-    if (!sameTypeSet) {
+    const sameTypeSetArr = config.ignoreTypeMatchClassNameMap.get(parentSymbol.getTypeText());
+    if (!sameTypeSetArr) {
         return false;
     }
 
-    if(sameTypeSet.has(derivedSymbol.id.name.hash)){
-        return true;
-    }else{
-        return false;
+    for (let index = 0; index < sameTypeSetArr.length; index++) {
+        const sameTypeSet = sameTypeSetArr[index];
+        if(sameTypeSet.has(derivedSymbol.getTypeText())){
+            return true;
+        }
     }
+
+    return false;
+
 }
 
 

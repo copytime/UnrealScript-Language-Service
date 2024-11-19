@@ -15,6 +15,6 @@ export type UCLanguageServerSettings = UCLanguageSettings & {
     analyzeDocuments?: EAnalyzeOption;
     analyzeDocumentDebouncePeriod: number;
     ignoreUCObjectLiteralAnalyzerClassNames?: string[];
-    ignoreTypeMatchClassNameMap?:Map<NameHash,Set<NameHash>>;
+    ignoreTypeMatchClassNameMap?:Map<string,Set<string>[]>;
     _ignoreTypeMatchClassNameSets:string[][];
 }

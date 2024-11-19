@@ -1342,8 +1342,8 @@ export class DocumentAnalyzer extends DefaultSymbolWalker<void> {
 
                         // ignored type match class name
                         if (areClassNameIgnored(
-                            leftOperandType.getRef<UCStructSymbol>()!,
-                            rightOperandType.getRef<UCStructSymbol>()!
+                            leftOperandType,
+                            rightOperandType
                         )) {
                             // do nothing
                         }

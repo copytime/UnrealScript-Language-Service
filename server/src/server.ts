@@ -686,11 +686,16 @@ function initializeConfiguration() {
     if (config._ignoreTypeMatchClassNameSets.length > 0) {
         config.ignoreTypeMatchClassNameMap = new Map();
         config._ignoreTypeMatchClassNameSets.forEach(classNameSet=>{
-            const sameTypeSet = new Set<number>();
+            const sameTypeSet = new Set<string>();
             classNameSet.forEach(className=>{
-                const hashName = toName(className);
-                sameTypeSet.add(hashName.hash);
-                config.ignoreTypeMatchClassNameMap?.set(hashName.hash,sameTypeSet);
+                sameTypeSet.add(className);
+                let setArr = config.ignoreTypeMatchClassNameMap?.get(className);
+                if (setArr) {
+                    setArr.push(sameTypeSet);
+                }else{
+                    setArr = [sameTypeSet];
+                }
+                config.ignoreTypeMatchClassNameMap?.set(className,setArr);
             })
         })
     }
