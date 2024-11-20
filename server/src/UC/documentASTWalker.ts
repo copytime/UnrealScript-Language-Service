@@ -662,7 +662,7 @@ export class DocumentASTWalker extends AbstractParseTreeVisitor<any> implements 
                 if (symbol.children) {
                     const prefixIndex = symbol.children.id.name.text.lastIndexOf('_');
                     if (prefixIndex !== -1) {
-                        if (!symbol.children.id.name.text.endsWith("_MAX")) {
+                        if (!symbol.children.id.name.text.toLowerCase().endsWith("_max")) {
                             const prefix = symbol.children.id.name.text.substring(0, prefixIndex);
                             const maxName = toName(prefix + "_MAX");
                             const enumId: Identifier = { name: maxName, range: identifier.range };
