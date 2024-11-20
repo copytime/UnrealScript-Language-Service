@@ -46,6 +46,8 @@ callMacroArguments
 macroArgument
 	:
 	macroLiteral
+	| macroLiteral macroArgument
+	| macroArgument macroLiteral
 	| macroArgument MACRO_INCR
 	| macroArgument MACRO_DECR
 	| MACRO_INCR macroArgument
@@ -62,6 +64,8 @@ macroArgument
 	| macroArgument MACRO_DOT macroArgument
 	| macroArgument MACRO_COLON macroArgument
 	| macroArgument MACRO_INTERR macroArgument
+	| MACRO_CHAR expr=macroExpression
+	| MACRO_CHAR OPEN_BRACE expr=macroExpression CLOSE_BRACE
 	;
 
 macroLiteral

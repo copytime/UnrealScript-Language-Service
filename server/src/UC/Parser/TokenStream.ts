@@ -40,7 +40,7 @@ export class UCTokenStream extends CommonTokenStream {
             // if so, insert a token references to the evaluated tokens that are part of a "`define" text block.
             if (token.type === UCLexer.MACRO_CHAR) {
                 const macroTokens = this.evaluatedTokens.get(token.startIndex);
-                if (macroTokens && Array.isArray(macroTokens) && this.isTokenMacroActive) {
+                if (macroTokens && Array.isArray(macroTokens) && macroTokens.length > 0 && this.isTokenMacroActive) {
                     const baseline = macroTokens[0].line;
                     const basechar = macroTokens[0].charPositionInLine;
                     for (let j = 0; j < macroTokens.length; ++j) {

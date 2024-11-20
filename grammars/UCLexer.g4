@@ -359,6 +359,7 @@ MACRO_END_IF:				'endif'                     -> channel(MACRO);
 MACRO_LINE:					'__LINE__'                  -> channel(MACRO);
 MACRO_FILE:					'__FILE__'                  -> channel(MACRO);
 MACRO_COMMA:				','							-> channel(MACRO), type(COMMA);
+MACRO_SEMICOLON:			';'							-> channel(MACRO), type(SEMICOLON);
 
 MACRO_OPEN_PARENS
 	: '('
@@ -375,11 +376,11 @@ MACRO_CLOSE_PARENS
 	: ')'
 	{
 		if(--this.parensLevel === 0){
-			if(this.isDefineContext && this.isArgsContext){
-				this.pushMode(UCLexer.MACRO_TEXT_MODE);
-			}
-			if(!this.isDefineContext && this.isArgsContext){
-				this.popMode();
+			if(this.isArgsContext){
+				this.isArgsContext = false;
+				if(this.isDefineContext){
+					this.pushMode(UCLexer.MACRO_TEXT_MODE);
+				}
 			}
 		}
 	}
@@ -398,8 +399,7 @@ MACRO_CLOSE_BRACE
 	: '}'
 	{
 		if (--this.braceLevel === 0) {
-			this.isDefineContext = false;
-            this.popMode();
+
 		}
 	}
 	-> channel(MACRO), type(CLOSE_BRACE)
@@ -486,11 +486,14 @@ MACRO_AND: '&&' -> channel(MACRO);
 MACRO_NEW_LINE
 	: [\r\n]+
 	{
-		this.parensLevel = 0;
-		this.braceLevel = 0;
-		this.isDefineContext = false;
+		if(this.parensLevel === 0 && this.braceLevel === 0){
+			this.popMode();
+			this.isDefineContext = false;
+			this.isIncludeContext = false;
+			this.isArgsContext = false;
+		}
 	}
-	-> channel(HIDDEN), popMode
+	-> channel(HIDDEN)
 	;
 
 // MACRO_ERROR: . -> channel(HIDDEN);
