@@ -263,7 +263,10 @@ function evalMacroExpr(macroParser: UCPreprocessorParser, expr: MacroExpressionC
     }
     if (expr instanceof MacroExprContext) {
         const macroSymbol = expr._MACRO_SYMBOL;
-        const id = macroSymbol?.text ?? "";
+        const id = macroSymbol?.text?.toLowerCase() ?? "";
+        if (id === "log" || id === "warn" || id === "logd" || id === "assert") {
+            return "false();";
+        }
         const value = macroParser.getSymbolValue(id.toLowerCase());
         if (!value) {
             return "";
