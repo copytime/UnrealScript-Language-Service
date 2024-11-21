@@ -392,7 +392,7 @@ export class UCCallExpression extends UCExpression {
                         }
                         break;
                     }
-
+                    case UCTypeKind.Int:       //should only allow byte in this condition, but compiler said it is ok to pass an int value.
                     case UCTypeKind.Byte: {
                         const enumSymbol = ObjectsTable.getSymbol<UCEnumSymbol>(name, UCSymbolKind.Enum);
                         if (enumSymbol) {
