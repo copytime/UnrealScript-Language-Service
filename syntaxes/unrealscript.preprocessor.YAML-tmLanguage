@@ -52,7 +52,7 @@ repository:
 
   preprocessor:
     name: meta.preprocessor.macro.upp
-    begin: \`
+    begin: \`(?!log|warn|assert)
     beginCaptures:
       '0':
         name: punctuation.definition.grave.upp
