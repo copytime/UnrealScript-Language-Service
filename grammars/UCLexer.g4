@@ -38,6 +38,10 @@ fragment ESC_SEQ
 	: '\\' .
 	;
 
+fragment ESC_SEQ_NO_NL
+	: '\\' ~[rn]
+	;
+
 fragment CALL_MACRO_CHAR
 	: '\u0060'
 	;
@@ -77,7 +81,7 @@ INTEGER_LITERAL
 	| DIGIT+
 	;
 
-STRING_LITERAL: '"' (~["])* '"';
+STRING_LITERAL: '"' (~["\n] | ESC_SEQ_NO_NL)* '"';
 NAME_LITERAL: '\'' (~['\n\\])* '\'';
 BOOLEAN_LITERAL: 'true' | 'false';
 NONE_LITERAL: 'none';
@@ -380,6 +384,8 @@ MACRO_CLOSE_PARENS
 				this.isArgsContext = false;
 				if(this.isDefineContext){
 					this.pushMode(UCLexer.MACRO_TEXT_MODE);
+				}else{
+					this.popMode();
 				}
 			}
 		}
