@@ -36,7 +36,7 @@ macroProgram returns[extraTokens?:Token[][]]
 	: macroStatement*
 	EOF
 	;
-macroStatement: MACRO_CHAR macro;
+macroStatement: MACRO_CHAR macro ';'?;
 
 callMacroArguments
 	:

@@ -169,42 +169,30 @@ export function FillEvaluatedTokens(document: UCDocument, macroParser: UCPreproc
                     const macroExpression = macroCtx.macroExpression();
 
                     let rawText = evalMacroExpr(macroParser,macroExpression).toString();
-
-                    // const macroSymbol = (macroExpression as MacroExprContext)._MACRO_SYMBOL;
-                    // const id = macroSymbol?.text ?? "";
-                    // const value = macroParser.getSymbolValue(id.toLowerCase());
-                    // if (!value) {
-                    //     continue;
-                    // }
-                    // if ( typeof value !== "object") {
-                    //     continue;
-                    // }
-                    // // const value = macroCtx._expr.value.toString();
-                    // if (value.text === '...') {
-                    //     // stumbled on an empty definition.
-                    //     continue;
-                    // }
-                    // let rawText = value.text;
-                    // if (value.params) {
-                    //     //replace args
-                    //     const inputArgs = (macroCtx._expr as MacroExprContext)._args;
-                    //     if (inputArgs) {
-                    //         const inputArgStrs = inputArgs.macroArgument().map(x=>x.text);
-
-                    //         for (let index = 0; index < inputArgStrs.length; index++) {
-                    //             const inputParam = inputArgStrs[index];
-                    //             const formalParam = value.params[index] ?? "";
-                    //             rawText = rawText.replaceAll(`\`${formalParam}`,inputParam);
-                    //             rawText = rawText.replaceAll(`\`{${formalParam}}`,inputParam);
-                    //         }
-
-                    //     }
-                    // }
-
                     rawText = rawText.replace('\\', '');
                     const inputStream = UCInputStream.fromString(rawText);
                     rawLexer.inputStream = inputStream;
-                    const tokens = rawLexer.getAllTokens();
+                    rawLexer.reset();
+                    const tokenStream = new UCTokenStream(rawLexer);
+                    // deal with macro in macro result
+                    const macroStream = new CommonTokenStream(rawLexer, UCLexer.MACRO);
+                    macroStream.fill();
+
+                    if (macroStream.getNumberOfOnChannelTokens() > 1) {
+                        const includeMacroParser = new UCPreprocessorParser(macroStream);
+                        includeMacroParser.filePath = document.uri;
+
+                        rawLexer.reset();
+                        includeMacroParser.currentSymbols = macroParser.currentSymbols;
+                        includeMacroParser.currentState = macroParser.currentState;
+                        FillEvaluatedTokens(document, includeMacroParser, tokenStream.evaluatedTokens, errListener);
+                    }
+                    rawLexer.reset();
+                    tokenStream.fill();
+                    const tokens = tokenStream.getTokens();
+                    if (tokens[tokens.length - 1].type === Token.EOF) {
+                        tokens.pop();
+                    }
                     tokens.forEach(t => {
                         if (t instanceof CommonToken) {
                             t.line = macroCtx.start.line;
