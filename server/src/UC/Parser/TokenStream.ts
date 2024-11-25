@@ -45,7 +45,7 @@ export class UCTokenStream extends CommonTokenStream {
                     const basechar = macroTokens[0].charPositionInLine;
                     for (let j = 0; j < macroTokens.length; ++j) {
                         const macroToken = macroTokens[j];
-                        macroToken.tokenIndex = i + j;
+                        macroToken.tokenIndex = this.tokens.length + j;
                         macroToken.line = token.line + (macroToken.line - baseline);
                         macroToken.charPositionInLine = token.charPositionInLine;//token.charPositionInLine + (macroToken.charPositionInLine - basechar);
                     }
