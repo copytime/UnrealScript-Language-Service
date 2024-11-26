@@ -9,6 +9,7 @@ scripts/
 server/
 syntaxes/
 unlens/
+unrealscript-debugger/
 
 **/*.ts
 **/*.d.ts
