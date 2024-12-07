@@ -81,7 +81,8 @@ import { UCGeneration } from './UC/settings';
 import { ActiveTextDocuments } from './activeTextDocuments';
 import { UCLanguageServerSettings } from './configuration';
 import { ModifierFlags } from 'UC/Symbols/ModifierFlags';
-
+import { RuleStartState } from 'antlr4ts/atn/RuleStartState';
+import { RuleWithStartTokenList } from 'antlr4-c3/lib/src/CodeCompletionCore';
 /** If the candidates collector hits any these it'll stop at the first occurance. */
 const PreferredRulesSet = new Set([
     // UCParser.RULE_typeDecl,
@@ -469,6 +470,7 @@ function buildMethodSignature(symbol: UCMethodSymbol): SignatureInformation {
     };
 }
 
+
 async function buildCompletionItems(
     document: UCDocument,
     position: Position,
@@ -567,6 +569,20 @@ async function buildCompletionItems(
     cc.translateRulesTopDown = false;
     cc.ignoredTokens = currentIgnoredTokensSet;
     cc.preferredRules = PreferredRulesSet;
+    // if (process.env.NODE_ENV === 'development') {
+    //     cc.showDebugOutput = true;
+    // }
+
+    const oldProcessRule:Function = (cc as any).processRule;
+    function newProcessRuleFunc(startState: RuleStartState, tokenListIndex: number, callStack: RuleWithStartTokenList,
+        precedence: number, indentation: number): Set<number> {
+        if (startState.ruleIndex === UCParser.RULE_exportBlockText) {
+            return new Set();
+        }
+        return oldProcessRule.call(cc,startState,tokenListIndex,callStack,precedence,indentation);
+    }
+    const newProcessRule = newProcessRuleFunc.bind(cc);
+    (cc as any).processRule = newProcessRule;
 
     let candidates: c3.CandidatesCollection;
     try {
@@ -592,6 +608,30 @@ async function buildCompletionItems(
         });
 
         clearTimeout(timeOut);
+
+
+        // candidates = await new Promise<c3.CandidatesCollection>((resolve, reject) => {
+        //     const timeOut = setTimeout(() => {
+        //         worker.terminate();
+        //         reject("c3 timeout");
+        //     }, 1000);
+
+        //     const workerFilePath = path.join(__dirname, "completionWorker.js");
+        //     const workerData: IWorkerData = {
+        //         parser: data.parser,
+        //         ignoredTokens: currentIgnoredTokensSet,
+        //         preferredRules: PreferredRulesSet,
+        //         leadingTokenIndex: leadingToken.tokenIndex,
+        //         scopeRuleContext: scopeRuleContext,
+        //         carretRuleContext: carretRuleContext,
+        //     }
+        //     const worker = new Worker(workerFilePath, { workerData: workerData });
+        //     worker.on("message",(data)=>{
+        //         clearTimeout(timeOut);
+        //         resolve(data)
+        //     });
+        //     worker.postMessage("");
+        // })
     } catch (err) {
         console.error('c3 collecting candidates error %s', err);
         candidates = {
