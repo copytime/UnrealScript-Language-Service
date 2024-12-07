@@ -154,6 +154,12 @@ export class OperatorSpaceRule implements IFormatRule {
                     || prevToken?.type == UCParser.KW_CLASS         // map<         e.g. map<int>
                     || prevToken?.type == UCParser.KW_DELEGATE      // delegete<    e.g. delegete<int>
                 ) {
+                    const prevTokenGtInfo = this.findSameLineToken(ctx.tryGetPrevToken.bind(ctx), currentToken);
+                    if (prevTokenGtInfo.token?.type === UCParser.GT) {
+                        // var array<delegate<CanUnpause> > arr;
+                        //                               ^---------- add space in here
+                        return 1;
+                    }
                     return 0;
                 }
             }

@@ -255,9 +255,54 @@ export async function getDocumentFormat(document: UCDocument, textDocId: TextDoc
             editArr.push(TextEdit.replace(Range.create(start, end), info.fixedText));
         }
     })
-    return editArr;
+    //remove overlap edit
+    return removeOverlapTextEdits(editArr);
 }
 
+
+function removeOverlapTextEdits(editArr: TextEdit[]) :TextEdit[]{
+    const validTextEditArr:TextEdit[] = [];
+    outer:for (let index = 0; index < editArr.length; index++) {
+        const currentEditText = editArr[index];
+        for (let validIndex = 0; validIndex < validTextEditArr.length; validIndex++) {
+            const validTextEdit = validTextEditArr[validIndex];
+            if (
+                (currentEditText.range.start.line >= validTextEdit.range.start.line
+                && currentEditText.range.start.character >= validTextEdit.range.start.character)
+                &&
+                (currentEditText.range.start.line <= validTextEdit.range.end.line
+                && currentEditText.range.start.character <= validTextEdit.range.end.character)
+            ) {
+                console.warn(`ignore overlap text edit: start:${currentEditText.range.start.line}-${currentEditText.range.start.character} end:${currentEditText.range.end.line}-${currentEditText.range.end.character} text:'${currentEditText.newText}'`);
+                continue outer;
+            }
+
+            if (
+                (currentEditText.range.end.line >= validTextEdit.range.start.line
+                && currentEditText.range.end.character >= validTextEdit.range.start.character)
+                &&
+                (currentEditText.range.end.line <= validTextEdit.range.end.line
+                && currentEditText.range.end.character <= validTextEdit.range.end.character)
+            ) {
+                console.warn(`ignore overlap text edit: start:${currentEditText.range.start.line}-${currentEditText.range.start.character} end:${currentEditText.range.end.line}-${currentEditText.range.end.character} text:'${currentEditText.newText}'`);
+                continue outer;
+            }
+
+            if (
+                (currentEditText.range.start.line <= validTextEdit.range.start.line
+                && currentEditText.range.start.character <= validTextEdit.range.start.character)
+                &&
+                (currentEditText.range.end.line >= validTextEdit.range.end.line
+                && currentEditText.range.end.character >= validTextEdit.range.end.character)
+            ) {
+                console.warn(`ignore overlap text edit: start:${currentEditText.range.start.line}-${currentEditText.range.start.character} end:${currentEditText.range.end.line}-${currentEditText.range.end.character} text:'${currentEditText.newText}'`);
+                continue outer;
+            }
+        }
+        validTextEditArr.push(currentEditText);
+    }
+    return validTextEditArr;
+}
 
 function buildRules(): IFormatRule[] {
     return [
