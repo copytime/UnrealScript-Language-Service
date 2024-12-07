@@ -688,6 +688,7 @@ function initializeConfiguration() {
         config._ignoreTypeMatchClassNameSets.forEach(classNameSet=>{
             const sameTypeSet = new Set<string>();
             classNameSet.forEach(className=>{
+                className = className.toLowerCase();
                 sameTypeSet.add(className);
                 let setArr = config.ignoreTypeMatchClassNameMap?.get(className);
                 if (setArr) {

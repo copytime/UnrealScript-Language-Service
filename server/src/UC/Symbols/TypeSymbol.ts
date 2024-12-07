@@ -1231,14 +1231,14 @@ export function areClassNameIgnored(parentSymbol: ITypeSymbol, derivedSymbol: IT
         return false;
     }
 
-    const sameTypeSetArr = config.ignoreTypeMatchClassNameMap.get(parentSymbol.getTypeText());
+    const sameTypeSetArr = config.ignoreTypeMatchClassNameMap.get(parentSymbol.getTypeText().toLowerCase());
     if (!sameTypeSetArr) {
         return false;
     }
 
     for (let index = 0; index < sameTypeSetArr.length; index++) {
         const sameTypeSet = sameTypeSetArr[index];
-        if(sameTypeSet.has(derivedSymbol.getTypeText())){
+        if(sameTypeSet.has(derivedSymbol.getTypeText().toLowerCase())){
             return true;
         }
     }
