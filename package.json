@@ -78,7 +78,8 @@
         "clean": "rimraf out --preserve-root",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
         "test": "cd server && npm test",
-        "test-live": "cd server && npm run test-live"
+        "test-live": "cd server && npm run test-live",
+        "reload": "npm run compile:grammar && npm run compile:preprocessor && (set NODE_ENV=development) & npm run compile -- --bundle --sourcemap --define:process.env.NODE_ENV=\\\"development\\\""
     },
     "activationEvents": [
         "workspaceContains:**/*.upkg,**/*.ucproject"
@@ -220,11 +221,11 @@
                     "description": "忽略分析的字面量类型名",
                     "default": []
                 },
-                "unrealscript._ignoreTypeMatchClassNameSets":{
+                "unrealscript._ignoreTypeMatchClassNameSets": {
                     "scope": "resource",
-                    "type":"array",
+                    "type": "array",
                     "description": "忽略类型匹配的类型名，二维数组，每个数组内元素代表同一类型",
-                    "default":[]
+                    "default": []
                 }
             }
         },
@@ -299,7 +300,6 @@
                     "meta.embedded.block.upp.uc": "unrealscript-pp"
                 }
             }
-
         ],
         "codeActions": [
             {
@@ -413,6 +413,16 @@
                             "autoResume": {
                                 "type": "boolean",
                                 "description": "auto-resume after the automatic first breakpoint after launch"
+                            },
+                            "connectAttempts": {
+                                "type": "integer",
+                                "description": "number of attempts to connect to the interface",
+                                "minimum": 1
+                            },
+                            "connectTimeoutSeconds": {
+                                "type": "number",
+                                "description": "timeout in seconds for each connection attempt",
+                                "minimum": 0.1
                             }
                         }
                     }

@@ -4,6 +4,9 @@
         {
             "name": "Launch Client (Watch)",
             "runtimeExecutable": "${execPath}",
+            "env": {
+                "NODE_ENV": "development"
+            },
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}"
             ],
