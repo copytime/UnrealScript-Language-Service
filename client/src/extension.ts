@@ -1,3 +1,4 @@
+import { existsSync } from 'fs';
 import * as path from 'path';
 import { ExtensionContext, workspace, commands, window, Uri, extensions } from 'vscode';
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient/node';
@@ -73,7 +74,37 @@ function copyInterfaceFile(folder: Uri, interfacePath: string) {
 	let destination = Uri.file(folder.path + "/DebuggerInterface.dll");
 	workspace.fs.copy(source, destination, { overwrite: true }).then(
 		() => {
-			window.showInformationMessage("Unrealscript debugger interface installed");
+
+			function copyVaDebugger() {
+				workspace.fs.copy(source,Uri.file(vaDebuggerDllPath),{overwrite:true}).then(
+					()=>{
+						window.showInformationMessage("Unrealscript debugger interface installed");
+					},
+					(reason)=>{
+						window.showInformationMessage("Unrealscript debugger interface installation failed: " + reason);
+					}
+				)
+			}
+
+			const vaDebuggerDirPath = path.join(folder.fsPath,"WTDebugger");
+			const vaDebuggerDllPath = path.join(vaDebuggerDirPath,"UCDebuggerSocket.dll");
+			const dirExist = existsSync(vaDebuggerDirPath);
+
+			if (dirExist) {
+				if(existsSync(vaDebuggerDllPath)){
+					//backup old va debugger
+					const oldUri = Uri.file(vaDebuggerDllPath);
+					const backupUri = Uri.file(path.join(vaDebuggerDirPath,`UCDebuggerSocket_${new Date().getTime()}.bck`));
+					workspace.fs.copy(oldUri,backupUri,{overwrite:true}).then(
+						()=>{
+						copyVaDebugger();
+					},(reason)=>{
+						window.showInformationMessage("Unrealscript debugger interface installation failed: " + reason);
+					})
+				}
+			}else{
+				copyVaDebugger();
+			}
 		},
 		(reason) => {
 			window.showInformationMessage("Unrealscript debugger interface installation failed: " + reason);
