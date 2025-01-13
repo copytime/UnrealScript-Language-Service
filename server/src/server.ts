@@ -59,6 +59,7 @@ import {
     documentIndexed$,
     documentsCodeIndexed$,
     enumerateDocuments,
+    enumerateGlobalUciDucuments,
     getDocumentById,
     getDocumentByURI,
     getPendingDocumentsCount,
@@ -469,7 +470,6 @@ connection.onInitialized((params) => {
             }
         });
 
-    const globalsUCIFileName = toName('globals');
     documentsSub = isIndexReady$
         .pipe(
             tap(value => {
@@ -503,12 +503,12 @@ connection.onInitialized((params) => {
                 'The workspace documents are being processed.',
                 true);
             try {
-                // TODO: does not respect multiple globals.uci files
-                const globalUci = getDocumentById(globalsUCIFileName);
-                if (globalUci && !globalUci.hasBeenIndexed) {
-                    queueIndexDocument(globalUci);
+                // queue multiple globals.uci files
+                for (const element of enumerateGlobalUciDucuments()) {
+                    if (!element.hasBeenIndexed) {
+                        queueIndexDocument(element);
+                    }
                 }
-
                 // Weird, even if when we have "zero" active documents, this array is filled?
                 const activeDocuments = ActiveTextDocuments
                     .all()
@@ -561,7 +561,11 @@ connection.onInitialized((params) => {
             })
             .then(() => {
                 // re-queue
-                pendingDocuments$.next(Array.from(enumerateDocuments()));
+                pendingDocuments$.next(
+                    Array.from(enumerateGlobalUciDucuments()).concat(
+                        Array.from(enumerateDocuments()
+                    ))
+                );
 
                 isIndexReady$.next(true);
             });
@@ -584,7 +588,11 @@ connection.onInitialized((params) => {
             }
 
             // re-queue
-            pendingDocuments$.next(Array.from(enumerateDocuments()));
+            pendingDocuments$.next(
+                Array.from(enumerateGlobalUciDucuments()).concat(
+                    Array.from(enumerateDocuments()
+                ))
+            );
         });
 
         connection.workspace.onDidCreateFiles(params => {

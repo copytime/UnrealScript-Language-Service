@@ -6,6 +6,16 @@ export interface IDiagnosticNode {
     readonly range: Range;
 }
 
+export class UnreachableDiagnostic implements IDiagnosticNode  {
+    constructor(readonly range: Range) {
+
+    }
+
+    toString(): string {
+        return "unreachable code";
+    }
+}
+
 export class ErrorDiagnostic implements IDiagnosticNode {
     constructor(readonly range: Range, private error: string) {
     }

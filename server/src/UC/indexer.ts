@@ -28,6 +28,8 @@ import { Name, NameHash, toName } from './name';
 // TODO: Re-work to hash documents by URI instead of file path, this would integrate easier with LSP events.
 export const documentsByPathMap = new Map<string, UCDocument>();
 export const documentsMap = new Map<NameHash, UCDocument>();
+export const documentsGlobalUciByPathMap = new Map<string, UCDocument>();
+const globalsUCIFileName = toName('globals');
 
 export const defaultSettings: UCLanguageServerSettings = {
     generation: UCGeneration.UC3,
@@ -201,9 +203,14 @@ export function createDocumentByPath(filePath: string, pkg: UCPackage) {
     }
 
     document = new UCDocument(filePath, pkg);
+    const filePathLowerCase = filePath.toLowerCase();
     // FIXME: Temporary fix around Glob 9.*, for some reason it returns results with cases that do not match its root input...
-    documentsByPathMap.set(filePath.toLowerCase(), document);
+    documentsByPathMap.set(filePathLowerCase, document);
     documentsMap.set(document.name.hash, document);
+    // Add global.uci to another map so that we can support multiple global.uci files
+    if (document.name.hash === globalsUCIFileName.hash) {
+        documentsGlobalUciByPathMap.set(filePathLowerCase, document);
+    }
     return document;
 }
 
@@ -218,6 +225,7 @@ export function removeDocumentByPath(filePath: string): boolean {
     document.invalidate();
     documentsByPathMap.delete(filePathLowerCase);
     documentsMap.delete(document.name.hash);
+    documentsGlobalUciByPathMap.delete(filePathLowerCase);
     return true;
 }
 
@@ -234,6 +242,10 @@ export function getDocumentById(id: Name): UCDocument | undefined {
 
 export function enumerateDocuments(): IterableIterator<UCDocument> {
     return documentsMap.values();
+}
+
+export function enumerateGlobalUciDucuments() {
+    return documentsGlobalUciByPathMap.values();
 }
 
 export const IndexedReferencesMap = new Map<NameHash, Set<SymbolReference>>();

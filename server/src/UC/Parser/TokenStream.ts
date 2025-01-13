@@ -9,25 +9,39 @@ import path from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { readTextByPath } from 'workspace';
 import { FillEvaluatedTokens } from './MacroProcessor';
+import { IDiagnosticNode, UnreachableDiagnostic } from 'UC/diagnostics/diagnostic';
+import { Position, Range } from 'vscode-languageserver';
 
 const DEFAULT_INPUT = UCInputStream.fromString('');
 
-export type EvaluatedTokens = Map<number, WritableToken[]|{activeControl:boolean}>;
+export type EvaluatedTokens = Map<number, WritableToken[] | { activeControl: boolean }>;
 
-function isControlMacro(evaluated:{activeControl?:boolean}) : evaluated is {activeControl:boolean} {
+function isControlMacro(evaluated: { activeControl?: boolean }): evaluated is { activeControl: boolean } {
     return typeof evaluated.activeControl === "boolean";
 }
 
 export class UCTokenStream extends CommonTokenStream {
-    readonly evaluatedTokens:EvaluatedTokens = new Map<number, WritableToken[]|{activeControl:boolean}>();
+    readonly evaluatedTokens: EvaluatedTokens = new Map<number, WritableToken[] | { activeControl: boolean }>();
 
-    initMacroTree(document: UCDocument,macroParser: UCPreprocessorParser, errListener?: ANTLRErrorListener<number>) {
-        FillEvaluatedTokens(document,macroParser,this.evaluatedTokens,errListener);
+    initMacroTree(document: UCDocument, macroParser: UCPreprocessorParser, errListener?: ANTLRErrorListener<number>) {
+        FillEvaluatedTokens(document, macroParser, this.evaluatedTokens, errListener);
     }
 
-    isTokenMacroActive:boolean = true;
+    private isTokenMacroActive: boolean = true;
+    private isRecordingUnreachableBlock = false;
+    private unreachableBlockStartLine: number = -1;
+    private unreachableBlockStartColumn: number = -1;
+    unreachableBlocks: IDiagnosticNode[] = []
 
-
+    // override seek(index: number): void {
+    //     if (index === 0) {
+    //         this.isRecordingUnreachableBlock = false;
+    //         this.unreachableBlockStartIndex = -1;
+    //         this.unreachableBlockStartLine = -1;
+    //         this.unreachableBlocks = [];
+    //     }
+    //     super.seek(index);
+    // }
 
     override fetch(n: number) {
         if (this.fetchedEOF) {
@@ -58,10 +72,31 @@ export class UCTokenStream extends CommonTokenStream {
             }
 
             if (this.isTokenMacroActive) {
+                if (this.isRecordingUnreachableBlock) {
+                    this.isRecordingUnreachableBlock = false;
+                    // push unreachable block
+                    if (this.unreachableBlockStartLine !== -1 && this.unreachableBlockStartColumn !== -1) {
+                        const node = new UnreachableDiagnostic(
+                            Range.create(
+                                Position.create(this.unreachableBlockStartLine, this.unreachableBlockStartColumn),
+                                Position.create(token.line - 2, token.startIndex)
+                            ));
+                        this.unreachableBlocks.push(node);
+                    }
+                    // reset line and index
+                    this.unreachableBlockStartLine = -1;
+                    this.unreachableBlockStartColumn = -1;
+                }
                 token.tokenIndex = this.tokens.length;
                 this.tokens.push(token);
-            }else{
+            } else {
                 n++;
+                if (!this.isRecordingUnreachableBlock) {
+                    // start unreachable block
+                    this.isRecordingUnreachableBlock = true;
+                    this.unreachableBlockStartLine = token.line;
+                    this.unreachableBlockStartColumn = token.charPositionInLine;
+                }
             }
 
 

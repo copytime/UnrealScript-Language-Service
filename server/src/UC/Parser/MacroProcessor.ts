@@ -215,7 +215,7 @@ export function FillEvaluatedTokens(document: UCDocument, macroParser: UCPreproc
 
 
     if (document.fileName.toLowerCase() === 'globals.uci') {
-        UCPreprocessorParser.globalSymbols = macroParser.currentSymbols;
+        UCPreprocessorParser.globalSymbols = new Map([...UCPreprocessorParser.globalSymbols,...macroParser.currentSymbols]);
         applyMacroSymbols(config.macroSymbols);
     }
 

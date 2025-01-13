@@ -1,19 +1,24 @@
-import { Diagnostic } from 'vscode-languageserver';
+import { Diagnostic, DiagnosticSeverity, DiagnosticTag } from 'vscode-languageserver';
 
-import { IDiagnosticNode } from './UC/diagnostics/diagnostic';
+import { IDiagnosticNode, UnreachableDiagnostic } from './UC/diagnostics/diagnostic';
 import { DocumentAnalyzer } from './UC/diagnostics/documentAnalyzer';
 import { UCDocument } from './UC/document';
 
 function diagnosticsFromNodes(nodes: IDiagnosticNode[]) {
     return nodes
         .map(node => {
-            return Diagnostic.create(
+            const diagnosticInfo = Diagnostic.create(
                 node.range,
                 node.toString(),
                 undefined,
                 undefined,
                 'unrealscript'
             );
+            if (node instanceof UnreachableDiagnostic) {
+                diagnosticInfo.severity = DiagnosticSeverity.Hint;
+                diagnosticInfo.tags = [DiagnosticTag.Unnecessary,...diagnosticInfo.tags??[]];
+            }
+            return diagnosticInfo;
         });
 }
 

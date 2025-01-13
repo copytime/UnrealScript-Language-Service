@@ -240,8 +240,9 @@ export class UCDocument {
             }
             console.info(`${this.fileName}: transforming time ${performance.now() - startWalking}`);
         }
+
+        this.nodes = this.nodes.concat(errorListener.nodes).concat(tokenStream.unreachableBlocks);
         tokenStream.release(tokenStream.mark());
-        this.nodes = this.nodes.concat(errorListener.nodes);
         return { context: context, parser };
     }
 
