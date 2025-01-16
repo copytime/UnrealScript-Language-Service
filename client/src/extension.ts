@@ -101,6 +101,8 @@ function copyInterfaceFile(folder: Uri, interfacePath: string) {
 					},(reason)=>{
 						window.showInformationMessage("Unrealscript debugger interface installation failed: " + reason);
 					})
+				}else{
+					copyVaDebugger();
 				}
 			}else{
 				copyVaDebugger();
